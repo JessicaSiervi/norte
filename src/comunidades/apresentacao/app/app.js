@@ -57,6 +57,9 @@ const estado = {
   verNomes: true,          // nomes das comunidades e das cidades no mapa
   verLocalidades: false,   // localidades oficiais do IBGE (Censo 2022), só pontos com nome
   localidades: null,       // /api/localidades-oficiais: [lat, lon, nome, categoria, município]
+  verRegioes: false,       // regiões do IBGE (microrregiões ou regiões imediatas), só o limite e o nome
+  tipoRegiao: 'micro',     // 'micro' (microrregião) ou 'imediata' (região geográfica imediata)
+  regioes: {},             // tipo -> /api/regioes: GeoJSON das regiões que tocam a área da empresa
   verComunidades: true,    // contorno das comunidades
   legendaAvisoVista: false, // a legenda das comunidades já abriu sozinha com o mapa de um aviso
   resumoClientes: null,    // /api/clientes/resumo: só contagens
@@ -2171,15 +2174,16 @@ function desenharRede() {
 }
 
 // ---- Camadas do mapa: interruptores, legenda de cada uma e a camada de clientes (fictícios) ----
-const CAMADAS_SALVAS = ['verComunidades', 'verNomes', 'verRede', 'verClientes', 'verLocalidades'];   // lembradas neste navegador (só conveniência)
+const CAMADAS_SALVAS = ['verComunidades', 'verNomes', 'verRede', 'verClientes', 'verLocalidades', 'verRegioes'];   // lembradas neste navegador (só conveniência)
 function lerCamadas() {
   try {
     const salvas = JSON.parse(localStorage.getItem('norte.camadas') || 'null');
     if (salvas) for (const k of CAMADAS_SALVAS) if (typeof salvas[k] === 'boolean') estado[k] = salvas[k];
+    if (['micro', 'imediata'].includes(salvas?.tipoRegiao)) estado.tipoRegiao = salvas.tipoRegiao;
   } catch (e) { /* sem armazenamento: valem os padrões */ }
 }
 function guardarCamadas() {
-  try { localStorage.setItem('norte.camadas', JSON.stringify(Object.fromEntries(CAMADAS_SALVAS.map(k => [k, estado[k]])))); } catch (e) { /* só nesta visita */ }
+  try { localStorage.setItem('norte.camadas', JSON.stringify({ ...Object.fromEntries(CAMADAS_SALVAS.map(k => [k, estado[k]])), tipoRegiao: estado.tipoRegiao })); } catch (e) { /* só nesta visita */ }
 }
 function marcarCamada(id, ligada) {
   const botao = $(id);
@@ -2199,6 +2203,12 @@ function desenharCamadas() {
   $('camadaLocalidades').hidden = !estado.usuario || ehFarol();
   $('contagemLocalidades').hidden = !estado.localidades;
   if (estado.localidades) $('contagemLocalidades').textContent = fmt(estado.localidades.length);
+  marcarCamada('botaoRegioes', estado.verRegioes);
+  $('camadaRegioes').hidden = !estado.usuario || ehFarol();
+  $('tipoRegiao').value = estado.tipoRegiao;
+  const regioes = estado.regioes[estado.tipoRegiao];
+  $('contagemRegioes').hidden = !estado.verRegioes || !regioes;
+  if (regioes) $('contagemRegioes').textContent = fmt(regioes.features.length);
   const r = estado.resumoClientes;
   $('contagemClientes').hidden = !r;
   if (r) $('contagemClientes').textContent = fmt(r.total);
@@ -2302,6 +2312,49 @@ function alternarLocalidades() {
     if (estado.verLocalidades && !estado.localidades) await carregarLocalidades();
     desenharLocalidades();
   });
+}
+
+// regiões do IBGE: o limite tracejado e o nome, abaixo das comunidades e sem pegar o clique (a ficha da comunidade continua
+// abrindo); umas dez regiões por tipo na área da empresa, buscadas uma vez por tipo
+let camadaRegioes;
+
+function desenharRegioes() {
+  camadaRegioes?.remove();
+  camadaRegioes = null;
+  const r = estado.regioes[estado.tipoRegiao];
+  if (!mapa || !estado.verRegioes || !r?.features.length) return;
+  if (!mapa.getPane('regioes')) {
+    const pane = mapa.createPane('regioes');
+    pane.style.zIndex = 350; pane.style.pointerEvents = 'none';   // abaixo das camadas do mapa (400)
+  }
+  const partes = [L.geoJSON(r, { pane: 'regioes', interactive: false, style: { className: 'contorno-regiao', weight: 2.5, dashArray: '8 6', fill: false } })];
+  for (const f of r.features)
+    partes.push(L.marker(f.properties.ponto, { pane: 'regioes', interactive: false, keyboard: false,
+      icon: L.divIcon({ className: 'rotulo regiao', html: no('span', { texto: f.properties.nome }), iconSize: null }) }));
+  camadaRegioes = L.layerGroup(partes).addTo(mapa);
+}
+
+async function carregarRegioes() {
+  const tipo = estado.tipoRegiao;
+  if (!estado.usuario || ehFarol() || estado.regioes[tipo]) return;
+  try { estado.regioes[tipo] = (await api(`/api/regioes?${consulta({ tipo })}`)).regioes; } catch (e) { return; }
+  desenharCamadas();
+  desenharRegioes();
+}
+
+function alternarRegioes() {
+  alternarCamada('verRegioes', async () => {
+    if (estado.verRegioes) await carregarRegioes();
+    desenharRegioes();
+  });
+}
+
+async function trocarTipoRegiao(e) {
+  estado.tipoRegiao = e.target.value === 'imediata' ? 'imediata' : 'micro';
+  guardarCamadas();
+  desenharCamadas();
+  desenharRegioes();
+  await carregarRegioes();
 }
 
 async function alternarClientes() {
@@ -2579,7 +2632,7 @@ async function buscar(url, opcoes = {}) {
 }
 // carregando: a barra do topo (qualquer pedido em andamento) e o aviso sobre o mapa (pedidos das camadas do mapa).
 // Só aparecem depois de 200 ms, para um pedido rápido não piscar; o leitor de tela segue com o aria-busy e as mensagens.
-const DO_MAPA = /^\/api\/(municipios|comunidades|clientes|localidades-oficiais|concessao)/;
+const DO_MAPA = /^\/api\/(municipios|comunidades|clientes|localidades-oficiais|regioes|concessao)/;
 const carregando = { todos: 0, mapa: 0, espera: null };
 function mudarCarregando(delta, doMapa) {
   carregando.todos += delta;
@@ -2788,6 +2841,7 @@ async function abrirApp() {
   desenharIrPara();
   carregarResumoClientes();
   carregarLocalidades();
+  if (estado.verRegioes) carregarRegioes();
   desenharCamadas();
   if (estado.verClientes) agendarClientes();
   atribuicao?.setPrefix(t('Concessão e comunidades: IBGE · Leaflet'));
@@ -2919,9 +2973,9 @@ function limparTela() {
   $('textoPergunta').value = ''; $('perguntaPainel').hidden = true;
   $('precoSpot').value = ''; $('veiculacoes').value = ''; $('custoRadio').hidden = true;
   $('legendaCalor').hidden = true; marcarCamada('botaoCalor', false);
-  Object.assign(estado, { resumoClientes: null, clientesVista: null, localidades: null, legendaAvisoVista: false });
+  Object.assign(estado, { resumoClientes: null, clientesVista: null, localidades: null, regioes: {}, legendaAvisoVista: false });
   $('camadaComunidades').classList.remove('aberta'); $('camadaComunidades').querySelector('[data-expandir]').setAttribute('aria-expanded', 'false');
-  camadaLocalidades?.remove(); camadaLocalidades = null; chaveClientes = null; camadaClientes?.remove(); camadaClientes = null; desenharCamadas();
+  camadaLocalidades?.remove(); camadaLocalidades = null; camadaRegioes?.remove(); camadaRegioes = null; chaveClientes = null; camadaClientes?.remove(); camadaClientes = null; desenharCamadas();
   $('dica').hidden = true;
   $('arquivo').value = '';
   $('buscaHistorico').value = ''; $('periodoHistorico').value = '';
@@ -4361,6 +4415,8 @@ async function abrir() {
   $('botaoRede').addEventListener('click', alternarRede);
   $('botaoClientes').addEventListener('click', alternarClientes);
   $('botaoLocalidades').addEventListener('click', alternarLocalidades);
+  $('botaoRegioes').addEventListener('click', alternarRegioes);
+  $('tipoRegiao').addEventListener('change', trocarTipoRegiao);
   $('botaoNomes').addEventListener('click', () => alternarCamada('verNomes', () => { desenharNomes(); desenharCidades(); }));
   $('botaoComunidades').addEventListener('click', () => alternarCamada('verComunidades', () => { desenharBase(); desenharComunidades(); desenharNomes(); }));
   $('legenda').addEventListener('click', e => { const b = e.target.closest('[data-expandir]'); if (b) expandirCamada(b); });

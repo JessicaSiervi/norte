@@ -247,6 +247,7 @@ EXATOS: dict[str, tuple[str, str]] = {
     "Município fora da área de atuação da empresa.": ("Municipality outside the company's service area.", "Municipio fuera del área de actuación de la empresa."),
     "Nada mudou na área de atuação.": ("Nothing changed in the service area.", "Nada cambió en el área de actuación."),
     "Envie a lista de municípios.": ("Send the list of municipalities.", "Envíe la lista de municipios."),
+    "tipo: use micro (microrregião) ou imediata (região geográfica imediata).": ("tipo: use micro (microregion) or imediata (immediate geographic region).", "tipo: use micro (microrregión) o imediata (región geográfica inmediata)."),
     "Código de município inválido (use os 7 dígitos do IBGE).": ("Invalid municipality code (use the 7 IBGE digits).", "Código de municipio inválido (use los 7 dígitos del IBGE)."),
     "UF inválida.": ("Invalid state.", "Estado inválido."),
     "Arquivo vazio.": ("Empty file.", "Archivo vacío."),

@@ -106,6 +106,38 @@ def municipios(area=None, u: gpd.GeoDataFrame | None = None) -> gpd.GeoDataFrame
     return g.sort_values(["NM_MUN", "SIGLA_UF"], key=lambda s: s.map(C.sem_acento)).reset_index(drop=True)
 
 
+# Regiões do IBGE: a microrregião (divisão de 1989, que o IBGE não atualiza mais) e a região geográfica imediata (2017, a
+# que a substitui). Saem da mesma lista de municípios que _municipios_uf já baixa (nomes_<UF>.json traz as duas); o
+# contorno é a junção dos municípios de cada região, sem outro download.
+CHAVES_REGIAO = {"micro": "microrregiao", "imediata": "regiao-imediata"}
+BURACO_MINIMO = 1e-5   # graus² (~0,1 km²): fresta entre municípios vizinhos na junção, não um município de outra região
+
+
+def _juntar(geometrias):
+    g = shapely.make_valid(shapely.union_all([shapely.make_valid(x) for x in geometrias]))
+    partes = [p for p in getattr(g, "geoms", [g]) if p.geom_type == "Polygon"]
+    partes = [Polygon(p.exterior, [b for b in p.interiors if Polygon(b).area >= BURACO_MINIMO]) for p in partes]
+    return shapely.MultiPolygon(partes)
+
+
+def regioes_uf(sigla: str) -> gpd.GeoDataFrame:
+    """Microrregiões e regiões imediatas da UF: TIPO (micro ou imediata), CODIGO, NOME, MUNICIPIOS (códigos IBGE) e o
+    contorno (junção dos municípios, EPSG:4674). Município sem a região na lista do IBGE fica de fora dela."""
+    g = _municipios_uf(sigla)
+    info = {str(m["id"]): m for m in json.loads((PASTA / f"nomes_{sigla}.json").read_text(encoding="utf-8"))}
+    linhas = []
+    for tipo, chave in CHAVES_REGIAO.items():
+        grupos = {}
+        for r in g.itertuples():
+            reg = (info.get(r.CD_MUN) or {}).get(chave)
+            if reg:
+                grupos.setdefault((str(reg["id"]), reg["nome"]), []).append((r.CD_MUN, r.geometry))
+        for (codigo, nome), ms in sorted(grupos.items()):
+            linhas.append({"TIPO": tipo, "CODIGO": codigo, "NOME": nome, "MUNICIPIOS": sorted(m for m, _ in ms),
+                           "geometry": _juntar([geo for _, geo in ms])})
+    return gpd.GeoDataFrame(linhas, geometry="geometry", crs=C.CRS_GEO)
+
+
 if __name__ == "__main__":
     ms = municipios()
     print(f"Concessão {SIGLA}: {len(ms)} municípios com pelo menos {MIN_DENTRO:.0%} da área dentro")

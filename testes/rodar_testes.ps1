@@ -43,6 +43,7 @@ $testes = @(
     @{ Nome = "Clientes fictícios (camada)";   Cmd = "uv run python -W ignore testes/api/teste_clientes.py" },
     @{ Nome = "Localidades: casamento de nomes"; Cmd = "uv run python -W ignore testes/nucleo/teste_localidades.py" },
     @{ Nome = "Localidades oficiais (IBGE)";   Cmd = "uv run python -W ignore testes/api/teste_localidades.py" },
+    @{ Nome = "Regiões do IBGE (camada)";      Cmd = "uv run python -W ignore testes/api/teste_regioes.py" },
     @{ Nome = "Registro total (rotas)";        Cmd = "uv run python -W ignore testes/api/teste_registro_total.py" },
     @{ Nome = "Áudio (MP3)";                   Cmd = "uv run python -W ignore testes/api/teste_audio.py" },
     @{ Nome = "Idiomas (aviso, PDF, e-mail)";  Cmd = "uv run python -W ignore testes/api/teste_idiomas.py" },

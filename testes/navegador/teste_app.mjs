@@ -138,8 +138,8 @@ const ucs = readFileSync(PLANILHA, 'utf-8').split(/\r?\n/).slice(1).filter(Boole
   const camadas = await p.avaliar(`({ interruptores: [...document.querySelectorAll('#legenda [role=switch]')].map(b => b.id),
     cliente: !$('camadaClientes').hidden, ligadoPadrao: $('botaoClientes').getAttribute('aria-checked'),
     alvos: [...document.querySelectorAll('#legenda .interruptor, #legenda .expandir')].filter(e => e.offsetParent).every(e => e.getBoundingClientRect().height >= 43.5) })`);
-  conferir('camadas: interruptores de comunidades, nomes, rede, clientes, localidades, calor e UCs, com alvo de 44 px; clientes desligada por padrão',
-    camadas.interruptores.join() === 'botaoComunidades,botaoNomes,botaoRede,botaoClientes,botaoLocalidades,botaoCalor,botaoUcs' && camadas.cliente && camadas.ligadoPadrao === 'false' && camadas.alvos, JSON.stringify(camadas));
+  conferir('camadas: interruptores de comunidades, nomes, rede, clientes, localidades, regiões, calor e UCs, com alvo de 44 px; clientes desligada por padrão',
+    camadas.interruptores.join() === 'botaoComunidades,botaoNomes,botaoRede,botaoClientes,botaoLocalidades,botaoRegioes,botaoCalor,botaoUcs' && camadas.cliente && camadas.ligadoPadrao === 'false' && camadas.alvos, JSON.stringify(camadas));
   await ate(p, `estado.resumoClientes && !$('contagemClientes').hidden`);
   const resumo = await p.avaliar(`({ total: estado.resumoClientes.total, chip: $('contagemClientes').textContent, classes: Object.keys(estado.resumoClientes.classes).join() })`);
   conferir('clientes fictícios: a contagem aparece ao lado do interruptor (só números)', resumo.total > 500000 && resumo.chip.replace(/\D/g, '') === String(resumo.total) && /Residencial/.test(resumo.classes), JSON.stringify(resumo));
@@ -184,6 +184,29 @@ const ucs = readFileSync(PLANILHA, 'utf-8').split(/\r?\n/).slice(1).filter(Boole
   await p.avaliar(`(mapa.setZoom(16), 0)`);
   await p.avaliar(`($('botaoLocalidades').click(), 0)`);
   conferir('localidades oficiais: o interruptor desliga e tira os pontos', await p.avaliar(`!camadaLocalidades && $('botaoLocalidades').getAttribute('aria-checked') === 'false'`));
+  // regiões do IBGE: desligada por padrão; ligada, o limite tracejado e o nome de cada região, sem pegar o clique; o seletor troca o tipo
+  conferir('regiões do IBGE: desligada por padrão, sem pedido à API e sem o seletor à vista',
+    await p.avaliar(`$('botaoRegioes').getAttribute('aria-checked') === 'false' && !camadaRegioes && !estado.regioes.micro && !$('tipoRegiao').offsetParent`));
+  await p.avaliar(`(mapa.setZoom(9), $('botaoRegioes').click(), 0)`);
+  await ate(p, `camadaRegioes && estado.regioes.micro`);
+  const reg = await p.avaliar(`({ n: estado.regioes.micro.features.length, nomes: [...document.querySelectorAll('.rotulo.regiao span')].map(e => e.textContent),
+    contagem: $('contagemRegioes').textContent, seletor: !!$('tipoRegiao').offsetParent && $('tipoRegiao').getBoundingClientRect().height >= 43.5,
+    tracejado: [...document.querySelectorAll('.leaflet-pane path.contorno-regiao')].length, clique: mapa.getPane('regioes').style.pointerEvents,
+    salvo: JSON.parse(localStorage.getItem('norte.camadas')).verRegioes })`);
+  conferir('regiões do IBGE (microrregiões): limite tracejado e nome de cada uma (Cataguases entre elas), contagem, seletor de 44 px, sem pegar o clique, lembrada',
+    reg.n > 3 && reg.nomes.length === reg.n && reg.nomes.includes('Cataguases') && reg.contagem.replace(/\D/g, '') === String(reg.n) && reg.seletor
+      && reg.tracejado === reg.n && reg.clique === 'none' && reg.salvo === true, JSON.stringify(reg));
+  await espera(500);
+  await captura(p, '1h_microrregioes.png');
+  await p.avaliar(`($('tipoRegiao').value = 'imediata', $('tipoRegiao').dispatchEvent(new Event('change')), 0)`);
+  await ate(p, `estado.regioes.imediata && camadaRegioes`);
+  const ime = await p.avaliar(`({ n: estado.regioes.imediata.features.length, rotulos: document.querySelectorAll('.rotulo.regiao').length,
+    salvo: JSON.parse(localStorage.getItem('norte.camadas')).tipoRegiao })`);
+  conferir('regiões do IBGE: o seletor troca para as regiões imediatas (e fica lembrado)', ime.n > 3 && ime.rotulos === ime.n && ime.salvo === 'imediata', JSON.stringify(ime));
+  await captura(p, '1i_regioes_imediatas.png');
+  await p.avaliar(`($('tipoRegiao').value = 'micro', $('tipoRegiao').dispatchEvent(new Event('change')), $('botaoRegioes').click(), 0)`);
+  conferir('regiões do IBGE: o interruptor desliga e tira os limites', await p.avaliar(`!camadaRegioes && $('botaoRegioes').getAttribute('aria-checked') === 'false'
+    && !document.querySelector('.rotulo.regiao')`));
   await p.avaliar(`(mapa.setZoom(13), 0)`);
   await ate(p, `document.documentElement.dataset.mapa === 'z13'`);
   await p.avaliar(`(mapa.setZoom(10), 0)`);

@@ -51,6 +51,7 @@ from ..banco import base_territorial as banco
 from ..banco import clientes as banco_clientes
 from ..banco import localidades as banco_localidades
 from ..banco import rede as banco_rede
+from ..banco import regioes_ibge as banco_regioes
 from ..banco import radios as banco_radios
 from ..banco import relatorios as banco_relatorios
 from ..fontes.base_territorial import CRS_BASE
@@ -253,7 +254,7 @@ def rede(codigo: str, u: dict = Depends(usuario_atual)) -> JSONResponse:
 
 
 def _area_do_mapa(u: dict) -> list[str]:
-    """Os municípios cujos clientes fictícios e localidades oficiais o perfil pode ver: só os da área de atuação da empresa; o Admin do Norte
+    """Os municípios cujos clientes fictícios, localidades oficiais e regiões do IBGE o perfil pode ver: só os da área de atuação da empresa; o Admin do Norte
     não vê o mapa operacional."""
     if u["perfil"] == "admin_farol":
         raise HTTPException(403, "Seu perfil não tem acesso a isto.")
@@ -265,6 +266,18 @@ def localidades_oficiais(u: dict = Depends(usuario_atual)) -> JSONResponse:
     """Localidades oficiais do IBGE (Censo 2022) da área da empresa, para a camada do mapa: [lat, lon, nome, categoria,
     município]. Dado público; os três perfis da empresa veem, o Admin do Norte não (mapa operacional)."""
     return JSONResponse({"fonte": "IBGE, Censo 2022", "localidades": banco_localidades.para_o_mapa(_area_do_mapa(u))},
+                        headers={"Cache-Control": "private, max-age=3600"})
+
+
+@app.get("/api/regioes")
+def regioes(tipo: str = "micro", u: dict = Depends(usuario_atual)) -> JSONResponse:
+    """Regiões do IBGE que tocam a área da empresa, para a camada do mapa: microrregiões (tipo=micro, divisão que o IBGE
+    não atualiza mais) ou regiões geográficas imediatas (tipo=imediata, a que a substitui). Contorno, nome e contagem de
+    municípios; dado público. Os três perfis da empresa veem, o Admin do Norte não (mapa operacional)."""
+    if tipo not in banco_regioes.TIPOS:
+        raise HTTPException(422, "tipo: use micro (microrregião) ou imediata (região geográfica imediata).")
+    return JSONResponse({"fonte": "IBGE", "tipo": tipo, "nome_tipo": banco_regioes.NOME_TIPO[tipo],
+                         "regioes": banco_regioes.para_o_mapa(tipo, _area_do_mapa(u))},
                         headers={"Cache-Control": "private, max-age=3600"})
 
 

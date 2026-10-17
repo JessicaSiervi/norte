@@ -514,6 +514,23 @@
           <li class="legenda-densidade"><span data-t>Os nomes oficiais do IBGE (Censo 2022); passe o mouse ou toque num ponto para ver o nome.</span></li>
         </ul>
       </li>
+      <li class="camada" id="camadaRegioes">
+        <div class="camada-cab">
+          <button type="button" role="switch" aria-checked="false" id="botaoRegioes" class="interruptor"><span class="trilho" aria-hidden="true"><span class="bola"></span></span><span data-t>Regiões do IBGE</span></button><span class="contagem" id="contagemRegioes" hidden></span>
+          <button type="button" class="expandir" data-expandir="legendaRegioes" aria-expanded="false" aria-controls="legendaRegioes" aria-label="Mostrar ou esconder a legenda" data-t-aria-label="Mostrar ou esconder a legenda"><span aria-hidden="true" class="seta">▾</span></button>
+        </div>
+        <div class="camada-opcao">
+          <label for="tipoRegiao" class="visualmente-oculto" data-t>Divisão regional</label>
+          <select id="tipoRegiao">
+            <option value="micro" data-t>Microrregiões</option>
+            <option value="imediata" data-t>Regiões imediatas</option>
+          </select>
+        </div>
+        <ul class="camada-legenda" id="legendaRegioes">
+          <li><span class="amostra regiao"></span><span data-t>Limite da região (IBGE)</span></li>
+          <li class="legenda-densidade"><span data-t>Microrregião: divisão de 1989, que o IBGE não atualiza mais. Região imediata: a divisão de 2017, que a substitui. Não mudam o aviso.</span></li>
+        </ul>
+      </li>
       <li class="camada" id="itemCalor" hidden>
         <div class="camada-cab">
           <button type="button" role="switch" aria-checked="false" id="botaoCalor" class="interruptor"><span class="trilho" aria-hidden="true"><span class="bola"></span></span><span data-t>Mapa de calor (12 meses)</span></button>
