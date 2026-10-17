@@ -1,0 +1,11 @@
+# Só o necessário para a API: código, configuração da distribuidora e o uv.lock
+.git
+.venv
+.env
+.env.*
+data/
+saida/
+testes/
+acesso/
+**/__pycache__
+*.py[oc]

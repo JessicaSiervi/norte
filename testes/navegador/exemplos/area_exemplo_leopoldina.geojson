@@ -1,0 +1,67 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -42.655423,
+       -21.508898
+      ],
+      [
+       -42.65636,
+       -21.509204
+      ],
+      [
+       -42.657738,
+       -21.508894
+      ],
+      [
+       -42.658401,
+       -21.507924
+      ],
+      [
+       -42.66963,
+       -21.438514
+      ],
+      [
+       -42.669234,
+       -21.437613
+      ],
+      [
+       -42.663708,
+       -21.43308
+      ],
+      [
+       -42.65016,
+       -21.428789
+      ],
+      [
+       -42.64888,
+       -21.429532
+      ],
+      [
+       -42.641809,
+       -21.442147
+      ],
+      [
+       -42.654917,
+       -21.508098
+      ],
+      [
+       -42.655423,
+       -21.508898
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "nome": "Exemplo de área de desligamento (Leopoldina)",
+    "descricao": "Contorno de demonstração para testar a importação no Farol. Rede e clientes fictícios."
+   }
+  }
+ ]
+}

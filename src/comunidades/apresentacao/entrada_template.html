@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<!-- Só os scripts embutidos rodam (pelo hash) e só os fundos de mapa da Esri vêm de fora. Calculada pelo entrada.py. -->
+<meta http-equiv="Content-Security-Policy" content="/*__CSP__*/">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Norte · Escolha a área</title>
+<link rel="icon" type="image/svg+xml" href="__FAVICON__">
+<!-- IBM Plex Sans embutida (SIL OFL 1.1; ver vendor/ibm-plex/) -->
+<style>/*__FONTES__*/</style>
+<!-- Leaflet 1.9.4 embutido (BSD-2; ver vendor/leaflet/) -->
+<style>/*__LEAFLET_CSS__*/</style>
+<style>
+:root { color-scheme: dark; --noite: #0E1620; --sup: #15202B; --sup2: #1C2A37; --linha: #2A3A4A; --texto: #E9EEF3;
+  --texto2: #B4C0CC; --apagado: #93A1AF; --ambar: #F5B83D; --info: #6CB4FF; }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--noite); color: var(--texto);
+  font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 40px 16px 32px; }
+.mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; }
+
+/* Abertura: logo, nome e slogan no topo da página */
+.topo { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.topo svg { width: 96px; height: 96px; display: block; }
+.nome { margin: 4px 0 0; font-size: 32px; font-weight: 600; letter-spacing: -.01em; line-height: 1.1; }
+.slogan { margin: 0; font-size: 16px; color: var(--texto2); }
+
+/* Escolha da área */
+.escolha { margin-top: 40px; }
+h1 { margin: 0 0 20px; font-size: 22px; font-weight: 600; text-align: center; }
+.cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.cartao { display: grid; gap: 14px; padding: 20px; border-radius: 14px; background: var(--sup); border: 1px solid var(--linha); }
+.cartao-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cartao h2 { margin: 0; font-size: 22px; font-weight: 600; }
+.uf { font-size: 13px; font-weight: 600; letter-spacing: .07em; color: var(--apagado); }
+.numeros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.numeros div { min-width: 0; }
+.numeros dt { font-size: 12.5px; color: var(--texto2); }
+.numeros dd { margin: 0; font-size: 20px; font-weight: 600; color: var(--ambar); font-variant-numeric: tabular-nums; }
+.abrir { display: flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 10px;
+  background: var(--ambar); color: var(--noite); font-weight: 600; text-decoration: none; }
+.abrir:hover { filter: brightness(1.06); }
+.abrir:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.vazio { text-align: center; color: var(--texto2); }
+
+/* Mapa do Brasil: UFs, área de concessão e municípios. Só aparece com script (html.com-mapa) */
+.painel-mapa { display: none; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; margin-bottom: 28px; }
+.com-mapa .painel-mapa { display: grid; }
+.brasil { height: 560px; border-radius: 14px; border: 1px solid var(--linha); background: var(--noite); overflow: hidden; }
+.brasil:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.lado { display: grid; align-content: start; gap: 16px; padding: 20px; border-radius: 14px; background: var(--sup); border: 1px solid var(--linha); }
+.lado h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.lado p { margin: 0; color: var(--texto2); font-size: 14px; }
+.contagem { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
+.contagem dt { font-size: 12.5px; color: var(--texto2); }
+.contagem dd { margin: 0; font-size: 22px; font-weight: 600; color: var(--ambar); font-variant-numeric: tabular-nums; }
+.legenda { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; color: var(--texto2); }
+.legenda li { display: flex; align-items: center; gap: 10px; }
+.amostra { flex: none; width: 18px; height: 14px; border-radius: 3px; }
+.amostra.concessao { border: 2px solid var(--ambar); background: rgba(245, 184, 61, .18); }
+.amostra.pronto { border: 1.5px solid var(--ambar); background: rgba(245, 184, 61, .55); }
+.amostra.pendente { border: 1px solid var(--apagado); background: rgba(147, 161, 175, .08); }
+.acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.acoes button { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--linha); background: var(--sup2);
+  color: var(--texto); font: inherit; font-weight: 500; cursor: pointer; }
+.acoes button[aria-pressed="true"] { border-color: var(--ambar); color: var(--ambar); }
+.acoes button:hover { filter: brightness(1.12); }
+.acoes button:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.prontos-titulo { margin: 0 0 14px; font-size: 16px; font-weight: 600; color: var(--texto2); }
+
+/* Leaflet no tema da página: botões de 44 px, popup e dica escuros */
+.leaflet-container { background: var(--noite); font: 14px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+.leaflet-bar { border: 1px solid var(--linha) !important; box-shadow: none !important; }
+/* .leaflet-touch: o Leaflet põe 30 px em qualquer navegador com Pointer Events; aqui o + e o − ficam com 44 px */
+.leaflet-bar a, .leaflet-touch .leaflet-bar a, .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out {
+  width: 44px; height: 44px; line-height: 44px; font-size: 20px; background: var(--sup); color: var(--texto); border-color: var(--linha); }
+.leaflet-bar a:hover { background: var(--sup2); }
+.leaflet-control-attribution { background: rgba(21, 32, 43, .88) !important; color: var(--texto2) !important; font-size: 11.5px; }
+.leaflet-control-attribution a { color: var(--info) !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-tooltip { background: var(--sup); color: var(--texto); border-color: var(--linha); }
+.leaflet-tooltip { font-size: 13.5px; }
+.leaflet-tooltip::before { display: none; }
+.leaflet-popup-content { margin: 14px 40px 14px 16px; min-width: 200px; }
+.leaflet-container a.leaflet-popup-close-button { width: 44px; height: 44px; font-size: 24px; line-height: 44px; color: var(--apagado); }
+.pop-cab { display: flex; align-items: baseline; gap: 8px; }
+.pop-cab strong { font-size: 17px; font-weight: 600; }
+.pop-situacao { margin: 4px 0 0; color: var(--texto2); }
+.pop .numeros { margin-top: 10px; }
+.pop .numeros dd { font-size: 17px; }
+.pop .abrir { margin-top: 12px; color: var(--noite) !important; }
+.rotulo-uf { color: var(--apagado); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-align: center; line-height: 16px;
+  text-shadow: 0 0 3px var(--noite), 0 0 3px var(--noite); pointer-events: none; }
+.admin { margin: 28px 0 0; text-align: center; }
+.admin a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 10px;
+  border: 1px solid var(--linha); color: var(--texto); text-decoration: none; }
+.admin a:hover { background: var(--sup); }
+.admin a:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+footer { margin-top: 32px; display: grid; gap: 6px; text-align: center; font-size: 13px; color: var(--apagado); }
+footer p { margin: 0; }
+code { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--texto2); white-space: nowrap; }
+
+@media (max-width: 860px) {
+  .painel-mapa { grid-template-columns: minmax(0, 1fr); }
+  .brasil { height: 60vh; min-height: 360px; }
+}
+@media (max-width: 640px) {
+  main { padding-top: 28px; }
+  .nome { font-size: 28px; }
+  .slogan { font-size: 14px; }
+  .escolha { margin-top: 28px; }
+  h1 { font-size: 20px; margin-bottom: 16px; }
+  .cartoes { gap: 12px; }
+  .cartao { padding: 16px; }
+  .cartao h2 { font-size: 20px; }
+  .numeros { gap: 6px; }
+  .numeros dd { font-size: 18px; }
+}
+
+/* Abertura curta, só com CSS (~1,2 s): o logo aparece grande no centro, o feixe gira uma vez,
+   o logo sobe para o topo e os cartões aparecem. Com movimento reduzido, a página já abre pronta. */
+.topo .feixe { transform-box: view-box; transform-origin: 32px 18px; }
+@media (prefers-reduced-motion: no-preference) {
+  .topo { animation: subir .5s cubic-bezier(.2, .7, .2, 1) .7s both; }
+  .topo svg { animation: encolher .5s cubic-bezier(.2, .7, .2, 1) .7s both; }
+  .topo .feixe { animation: feixe-gira .7s ease-in-out both; }
+  .nome, .slogan { animation: surgir .35s ease .25s both; }
+  .escolha, .admin, footer { animation: surgir .4s ease .95s both; }
+}
+/* só o logo cresce (o cabeçalho inteiro ampliado passaria da largura da tela) */
+@keyframes subir { from { transform: translateY(calc(50vh - 150px)); } to { transform: none; } }
+@keyframes encolher { from { transform: scale(1.6); } to { transform: none; } }
+@keyframes feixe-gira { 0% { transform: scaleX(1); } 25% { transform: scaleX(.12); opacity: .5; } 50% { transform: scaleX(-1); }
+  75% { transform: scaleX(-.12); opacity: .5; } 100% { transform: scaleX(1); } }
+@keyframes surgir { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="topo">
+    <!--__LOGO__-->
+    <p class="nome">Norte</p>
+    <p class="slogan">O aviso certo, para a comunidade certa</p>
+  </header>
+  <section class="escolha" aria-labelledby="pergunta">
+    <h1 id="pergunta">Qual área você quer abrir?</h1>
+    <div class="painel-mapa">
+      <div id="brasil" class="brasil" role="region" aria-label="Mapa do Brasil com a área de concessão e os municípios"></div>
+      <aside class="lado" aria-labelledby="titulo-concessao">
+        <h2 id="titulo-concessao">Área de concessão <span id="sigla"></span></h2>
+        <dl class="contagem">
+          <div><dt>municípios</dt><dd id="n-municipios"></dd></div>
+          <div><dt>com o Norte pronto</dt><dd id="n-prontos"></dd></div>
+        </dl>
+        <ul class="legenda">
+          <li><span class="amostra concessao"></span>Contorno da concessão</li>
+          <li><span class="amostra pronto"></span>Norte pronto: clique para abrir</li>
+          <li><span class="amostra pendente"></span>Ainda não processado</li>
+        </ul>
+        <div class="acoes" role="group" aria-label="Enquadrar o mapa">
+          <button type="button" id="ver-brasil" aria-pressed="false">Brasil</button>
+          <button type="button" id="ver-concessao" aria-pressed="false">Concessão</button>
+        </div>
+        <p>Contorno real da concessão (KML da Energisa) e malhas reais do IBGE.</p>
+      </aside>
+    </div>
+    <p class="prontos-titulo">Municípios com o Norte pronto</p>
+    <!--__CARTOES__-->
+  </section>
+  <!--__ADMIN__-->
+  <footer>
+    <p>Rede elétrica e clientes fictícios. Território, endereços e vias reais (IBGE Censo 2022 e OpenStreetMap).</p>
+    <p>Para outro município, gere o Norte pelo comando com <code>--coordenada</code> ou <code>--distribuidora</code>.</p>
+  </footer>
+</main>
+<script>/*__LEAFLET_JS__*/</script>
+<script>
+'use strict';
+// ============ Model: dados embutidos, estado da tela e regras puras (não toca no HTML) ============
+const D = /*__DADOS__*/null;
+const BRASIL = [[-33.8, -74.0], [5.3, -34.8]];
+const ZOOM_MUNICIPIOS = 7;                   // a partir deste zoom os municípios aparecem um a um
+const SEM_MOVIMENTO = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const estado = { enquadramento: 'brasil', zoom: 0 };
+const pronto = f => !!f.properties.MAPA;
+const contagens = () => ({ total: D.concessao.n, prontos: D.municipios.features.filter(pronto).length });
+const fmt = n => n.toLocaleString('pt-BR');
+const detalhado = () => estado.zoom >= ZOOM_MUNICIPIOS;
+
+// ============ View: desenha a partir do estado (não muda o estado) ============
+const COR = { ambar: '#F5B83D', apagado: '#93A1AF', linha: '#3A4D60', sup: '#15202B' };
+const ESTILO = {
+  uf: { color: COR.linha, weight: 1, fillColor: COR.sup, fillOpacity: .35 },
+  concessao: () => ({ color: COR.ambar, weight: 2, fillColor: COR.ambar, fillOpacity: detalhado() ? 0 : .22 }),
+  municipio: f => pronto(f) ? { color: COR.ambar, weight: 1.5, fillColor: COR.ambar, fillOpacity: .5 }
+                            : { color: COR.apagado, weight: .8, fillColor: COR.apagado, fillOpacity: .06 },
+};
+let mapa, camadas = {};
+
+// todo texto vindo dos dados entra como texto, nunca como HTML
+function no(tag, classe, texto) {
+  const e = document.createElement(tag);
+  if (classe) e.className = classe;
+  if (texto !== undefined) e.textContent = texto;
+  return e;
+}
+
+function rotulo(f) {
+  const p = f.properties;
+  return no('span', '', `${p.NM_MUN}/${p.SIGLA_UF}${pronto(f) ? ' · Norte pronto' : ''}`);
+}
+
+function conteudoPopup(f) {
+  const p = f.properties, raiz = no('div', 'pop'), cab = no('div', 'pop-cab');
+  cab.append(no('strong', '', p.NM_MUN), no('span', 'uf', p.SIGLA_UF));
+  raiz.append(cab);
+  if (!pronto(f)) {
+    raiz.append(no('p', 'pop-situacao', `Na concessão ${D.concessao.sigla}. Ainda não processado no Norte.`));
+    return raiz;
+  }
+  const dl = no('dl', 'numeros');
+  for (const [nome, v] of [['clientes', p.CLIENTES], ['comunidades', p.COMUNIDADES], ['chaves', p.CHAVES]]) {
+    const d = no('div'); d.append(no('dt', '', nome), no('dd', '', fmt(v))); dl.append(d);
+  }
+  const a = no('a', 'abrir', 'Abrir o mapa');
+  a.href = p.MAPA;
+  a.setAttribute('aria-label', `Abrir ${p.NM_MUN}/${p.SIGLA_UF}`);
+  raiz.append(dl, a);
+  return raiz;
+}
+
+function desenharLado() {
+  const c = contagens();
+  document.getElementById('sigla').textContent = D.concessao.sigla;
+  document.getElementById('n-municipios').textContent = fmt(c.total);
+  document.getElementById('n-prontos').textContent = fmt(c.prontos);
+  document.getElementById('ver-brasil').setAttribute('aria-pressed', String(estado.enquadramento === 'brasil'));
+  document.getElementById('ver-concessao').setAttribute('aria-pressed', String(estado.enquadramento === 'concessao'));
+}
+
+// camadas que dependem do zoom: no país, rótulos das UFs e um ponto por município pronto;
+// de perto, os municípios um a um (clicáveis) e a concessão só com o contorno
+function desenharCamadas() {
+  const mostrar = (camada, sim) => sim ? camada.addTo(mapa) : camada.remove();
+  mostrar(camadas.rotulos, !detalhado());
+  mostrar(camadas.pontos, !detalhado());
+  mostrar(camadas.municipios, detalhado());
+  camadas.concessao.setStyle(ESTILO.concessao());
+}
+
+function desenhar() { desenharLado(); desenharCamadas(); }
+
+function enquadrar(alvo) {
+  const limites = alvo === 'concessao' ? camadas.concessao.getBounds() : BRASIL;
+  mapa.fitBounds(limites, { padding: [16, 16], animate: !SEM_MOVIMENTO });
+}
+
+// ============ Controller: eventos e abertura (atualiza o estado e pede para redesenhar) ============
+function irPara(alvo) {
+  estado.enquadramento = alvo;
+  enquadrar(alvo);
+  desenharLado();
+}
+
+// aproxima do município (os municípios aparecem um a um nesse zoom) e abre o popup quando o mapa para
+function abrirMunicipio(camada) {
+  estado.enquadramento = '';
+  mapa.once('moveend', () => camada.openPopup());
+  mapa.fitBounds(camada.getBounds(), { maxZoom: 10, padding: [40, 40], animate: !SEM_MOVIMENTO });
+  desenharLado();
+}
+
+function iniciar() {
+  if (!D) return;  // sem os dados da concessão, a entrada fica só com os cartões
+  document.documentElement.classList.add('com-mapa');
+  mapa = L.map('brasil', { attributionControl: false, minZoom: 3, maxZoom: 13, zoomSnap: .25, scrollWheelZoom: false,
+    maxBounds: [[-42, -92], [14, -22]], maxBoundsViscosity: .8,
+    fadeAnimation: !SEM_MOVIMENTO, zoomAnimation: !SEM_MOVIMENTO, markerZoomAnimation: !SEM_MOVIMENTO });
+  L.control.attribution({ prefix: 'Concessão: KML da Energisa · malhas: IBGE · Leaflet' }).addTo(mapa);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Fundo &copy; Esri', maxZoom: 13, maxNativeZoom: 16, noWrap: true }).addTo(mapa);
+
+  L.geoJSON(D.ufs, { style: ESTILO.uf, interactive: false }).addTo(mapa);
+  camadas.rotulos = L.layerGroup(D.rotulosUF.map(([lat, lon, sigla]) =>
+    L.marker([lat, lon], { interactive: false, keyboard: false,
+      icon: L.divIcon({ className: 'rotulo-uf', html: no('span', '', sigla), iconSize: [32, 16] }) })));
+  camadas.concessao = L.geoJSON(D.concessao.geo, { style: ESTILO.concessao })
+    .bindTooltip(() => no('span', '', `Concessão ${D.concessao.sigla} · ${fmt(D.concessao.n)} municípios`), { sticky: true })
+    .on('click', () => { if (!detalhado()) irPara('concessao'); })
+    .addTo(mapa);
+  const porIndice = [];
+  camadas.municipios = L.geoJSON(D.municipios, {
+    style: ESTILO.municipio,
+    onEachFeature: (f, camada) => {
+      porIndice.push([f, camada]);
+      camada.bindTooltip(() => rotulo(f), { sticky: true }).bindPopup(() => conteudoPopup(f), { maxWidth: 280 });
+    },
+  });
+  camadas.pontos = L.layerGroup(D.prontos.map(([lat, lon, i]) => {
+    const [f, camada] = porIndice[i];
+    return L.circleMarker([lat, lon], { radius: 7, color: COR.sup, weight: 2, fillColor: COR.ambar, fillOpacity: 1 })
+      .bindTooltip(() => rotulo(f))
+      .on('click', () => abrirMunicipio(camada));
+  }));
+
+  // a roda do mouse só dá zoom depois de clicar no mapa (a página continua rolando por cima dele)
+  mapa.on('click focus', () => mapa.scrollWheelZoom.enable());
+  mapa.on('mouseout blur', () => mapa.scrollWheelZoom.disable());
+  mapa.on('zoomend', () => { estado.zoom = mapa.getZoom(); desenharCamadas(); });
+  mapa.on('dragstart', () => { estado.enquadramento = ''; desenharLado(); });
+  document.getElementById('ver-brasil').addEventListener('click', () => irPara('brasil'));
+  document.getElementById('ver-concessao').addEventListener('click', () => irPara('concessao'));
+
+  enquadrar(estado.enquadramento);
+  estado.zoom = mapa.getZoom();
+  desenhar();
+}
+
+iniciar();
+</script>
+</body>
+</html>

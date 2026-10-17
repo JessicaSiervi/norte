@@ -1,0 +1,112 @@
+# Configuração da distribuidora: demonstração em Muriaé/MG (cópia do demo-leopoldina, só o município muda).
+# Tudo o que muda de uma distribuidora para outra fica aqui. O pipeline lê este arquivo
+# e passa os valores ao núcleo e à apresentação (o núcleo não lê arquivos).
+# Campos marcados "a confirmar" são suposições desta demonstração.
+# Para outra empresa, copie distribuidoras/MODELO.toml e preencha.
+
+[distribuidora]
+nome = "Distribuidora (demonstração)"       # como aparece no roteiro para a rádio
+assinatura_aviso_atual = "Energisa"         # quem assina o aviso de hoje ("A Energisa informa...")
+telefone = "0800 XXX XXXX"                  # atendimento citado no aviso (a confirmar)
+municipio = "Muriaé"                        # citado no aviso ("em Muriaé"); o distrito com este nome vira "Sede"
+uf = "MG"
+codigo_ibge = "3143906"                     # código IBGE do município (define os dados baixados e as pastas)
+# sigla_rede = "LPD"                        # opcional: sigla da rede fictícia; sem ela, vem do nome do município
+idioma_padrao = "pt-BR"                     # idioma inicial do aviso: "pt-BR", "en" ou "es"
+
+[regulatorio]
+prazo_legal_horas = 72                      # antecedência mínima para as demais unidades
+prazo_vital_dias_uteis = 5                  # antecedência para quem usa equipamento vital
+prazo_interno_dias = 15                     # planejamento interno da empresa (a confirmar)
+norma = "REN ANEEL 1.000/2021, art. 436"    # referência dos prazos legais
+
+[expediente]
+inicio_min_h = 7.0                          # a obra pode começar a partir desta hora (a confirmar)
+ultimo_inicio_h = 17.0                      # último horário de início permitido (a confirmar)
+fim_max_h = 18.0                            # a obra tem de terminar até esta hora (a confirmar)
+passo_min = 30                              # passo dos horários sugeridos, em minutos
+
+[aviso]
+limiar_total = 0.9                          # >= 90% das UCs da comunidade afetadas -> comunidade inteira
+limite_fragmento = 2                        # até 2 UCs afetadas...
+limite_participacao = 0.10                  # ...e < 10% das UCs da chave -> "localidades vizinhas"
+
+[radio]
+spot_segundos = 30          # a rádio cobra por inserção (spot) de 30 segundos
+spot_reais = 80.0           # preço de REFERÊNCIA por spot, em reais (a confirmar com a emissora; a tela deixa mudar)
+veiculacoes = 1             # quantas vezes o aviso vai ao ar
+fonte = "Referência de mercado para rádio local (Música 360: R$ 30 a R$ 100 por spot de 30 s; sem tabela pública de Minas); confirmar com a emissora."
+
+[obra]
+raio_rede_m = 500           # ponto da obra: distância máxima até a rede de média tensão, em metros (a confirmar)
+
+[janela]
+razao_muito_pior = 1.5                      # a partir desta razão, avisa que a janela escolhida é muito pior
+
+[planilha]
+epsg_utm = 31983                            # fuso UTM das colunas COORD_X/COORD_Y (SIRGAS 2000 / UTM 23S)
+ponto_isolado_km = 20.0                     # ponto mais longe que isso do vizinho mais próximo da planilha: aviso
+muitas_ucs_mesma_coordenada = 10            # a mesma coordenada em tantas UCs ou mais: aviso (suspeito)
+limite_rejeitadas = 0.02                    # mais de 2% de linhas rejeitadas: o aviso só sai com justificativa
+
+# ---------------------------------------------------------------------------
+# Perfis de sensibilidade por atividade.
+# Hipóteses de demonstração, a validar com a distribuidora e por região (a confirmar).
+# Níveis: "ZERO", "BAIXO", "MEDIO", "ALTO". Dias: "util", "sabado", "domingo".
+# A ordem das atividades define a ordem das explicações e das contagens no mapa.
+# ---------------------------------------------------------------------------
+
+[perfis.agropecuaria]
+singular = "estabelecimento agropecuário"
+plural = "estabelecimentos agropecuários"
+padrao = { util = "MEDIO", sabado = "MEDIO", domingo = "MEDIO" }
+periodos = [
+  { nome = "a ordenha da manhã", dias = ["util", "sabado", "domingo"], inicio_h = 5, fim_h = 7, nivel = "ALTO" },
+  { nome = "a ordenha da tarde", dias = ["util", "sabado", "domingo"], inicio_h = 15, fim_h = 17, nivel = "ALTO" },
+  # IN 77/2018 do MAPA: o leite deve chegar a 4 °C em até 3 horas após o fim da ordenha;
+  # sem energia, o tanque não resfria.
+  { nome = "o resfriamento do leite da manhã", dias = ["util", "sabado", "domingo"], inicio_h = 7, fim_h = 10, nivel = "ALTO" },
+  { nome = "o resfriamento do leite da tarde", dias = ["util", "sabado", "domingo"], inicio_h = 17, fim_h = 20, nivel = "ALTO" },
+]
+
+[perfis.saude]
+singular = "unidade de saúde"
+plural = "unidades de saúde"
+padrao = { util = "BAIXO", sabado = "BAIXO", domingo = "BAIXO" }
+periodos = [
+  { nome = "o atendimento de saúde", dias = ["util"], inicio_h = 7, fim_h = 19, nivel = "ALTO" },
+]
+
+[perfis.ensino]
+singular = "escola"
+plural = "escolas"
+padrao = { util = "BAIXO", sabado = "ZERO", domingo = "ZERO" }
+periodos = [
+  { nome = "o horário de aula da manhã", dias = ["util"], inicio_h = 7, fim_h = 12, nivel = "ALTO" },
+  { nome = "o horário de aula da tarde", dias = ["util"], inicio_h = 13, fim_h = 17, nivel = "ALTO" },
+]
+
+[perfis.residencial]
+singular = "residência"
+plural = "residências"
+padrao = { util = "BAIXO", sabado = "BAIXO", domingo = "BAIXO" }
+periodos = [
+  { nome = "o pico residencial da manhã", dias = ["util", "sabado", "domingo"], inicio_h = 6, fim_h = 8, nivel = "MEDIO" },
+  { nome = "o pico residencial da noite", dias = ["util", "sabado", "domingo"], inicio_h = 18, fim_h = 22, nivel = "MEDIO" },
+]
+
+[perfis.religioso]
+singular = "templo"
+plural = "templos"
+padrao = { util = "ZERO", sabado = "ZERO", domingo = "ZERO" }
+periodos = [
+  { nome = "a celebração de domingo", dias = ["domingo"], inicio_h = 7, fim_h = 12, nivel = "MEDIO" },
+]
+
+[perfis.outros]
+singular = "comércio ou serviço"
+plural = "comércios e serviços"
+padrao = { util = "ZERO", sabado = "ZERO", domingo = "ZERO" }
+periodos = [
+  { nome = "o horário comercial", dias = ["util", "sabado", "domingo"], inicio_h = 8, fim_h = 18, nivel = "BAIXO" },
+]

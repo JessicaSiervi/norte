@@ -1,0 +1,100 @@
+# MODELO de configuração de distribuidora para o Farol.
+# Copie este arquivo (por exemplo, distribuidoras/minha-empresa.toml), preencha os campos
+# e rode:  py -m uv run comunidades --distribuidora distribuidoras/minha-empresa.toml
+#
+# O município (codigo_ibge, municipio e uf) define os dados reais baixados do IBGE e do
+# OpenStreetMap e as pastas data/<municipio>/ e saida/<municipio>/. Também é possível partir
+# de uma coordenada:  py -m uv run comunidades --coordenada "-21.13,-42.37"
+# Todos os campos são obrigatórios: se faltar algum, o pipeline para e diz qual.
+
+[distribuidora]
+nome = ""                      # nome que aparece no roteiro para a rádio
+assinatura_aviso_atual = ""    # quem assina o aviso usado hoje, na comparação "fazenda a fazenda"
+telefone = ""                  # telefone de atendimento citado no aviso
+municipio = ""                 # nome do município como dito no rádio; o distrito com este nome vira "Sede"
+uf = ""                        # sigla do estado
+codigo_ibge = ""               # código IBGE do município, 7 dígitos (consulte servicodados.ibge.gov.br)
+# sigla_rede = ""              # opcional: sigla da rede fictícia (ex.: "LPD"); sem ela, vem do nome do município
+idioma_padrao = "pt-BR"        # "pt-BR", "en" ou "es"
+
+[regulatorio]
+prazo_legal_horas = 0          # antecedência mínima exigida para as demais unidades, em horas
+prazo_vital_dias_uteis = 0     # antecedência para quem usa equipamento vital, em dias úteis
+prazo_interno_dias = 0         # prazo interno de planejamento da empresa, em dias
+norma = ""                     # referência da norma dos prazos (ex.: "REN ANEEL 1.000/2021, art. 436")
+
+[expediente]
+inicio_min_h = 0.0             # hora mínima de início da obra (ex.: 7.0)
+ultimo_inicio_h = 0.0          # último horário de início permitido (ex.: 17.0)
+fim_max_h = 0.0                # hora máxima de término (ex.: 18.0)
+passo_min = 30                 # passo dos horários sugeridos, em minutos
+
+[aviso]
+limiar_total = 0.0             # fração das UCs de uma comunidade a partir da qual ela entra "inteira" (ex.: 0.9)
+limite_fragmento = 0           # até quantas UCs afetadas uma comunidade parcial pode virar "localidades vizinhas"
+limite_participacao = 0.0      # ...e abaixo de que fração das UCs da chave (ex.: 0.10)
+
+# Opcional: custo do aviso no ar (a rádio cobra por inserção/spot de 30 s). Sem esta seção, o comparativo
+# mostra os spots mas não o valor em reais. O preço é de referência; confirme com a emissora.
+# [radio]
+# spot_segundos = 30
+# spot_reais = 0.0
+# veiculacoes = 1
+# fonte = ""                   # de onde vem o preço
+
+[obra]
+raio_rede_m = 0             # ponto da obra: distância máxima até a rede de média tensão, em metros (ex.: 500)
+
+[janela]
+razao_muito_pior = 0.0         # razão entre notas a partir da qual a janela escolhida é "muito pior" (ex.: 1.5)
+
+[planilha]                     # opcional: sem esta seção valem os valores abaixo
+epsg_utm = 31983               # fuso UTM das colunas COORD_X/COORD_Y (SIRGAS 2000; 31982 = 22S, 31983 = 23S, 31984 = 24S)
+ponto_isolado_km = 20.0        # ponto mais longe que isso do vizinho mais próximo da planilha: aviso
+muitas_ucs_mesma_coordenada = 10   # a mesma coordenada em tantas UCs ou mais: aviso (suspeito)
+limite_rejeitadas = 0.02       # fração de linhas rejeitadas acima da qual o aviso só sai com justificativa
+
+# ---------------------------------------------------------------------------
+# Perfis de sensibilidade (um bloco por atividade, na ordem desejada).
+# Atividades usadas pelo cadastro: agropecuaria, saude, ensino, residencial, religioso, outros.
+# Níveis: "ZERO", "BAIXO", "MEDIO", "ALTO". Dias: "util", "sabado", "domingo".
+# "nome" do período aparece nas explicações da janela sugerida (ex.: "a ordenha da tarde").
+# ---------------------------------------------------------------------------
+
+[perfis.agropecuaria]
+singular = ""
+plural = ""
+padrao = { util = "", sabado = "", domingo = "" }
+periodos = [
+  # { nome = "", dias = ["util", "sabado", "domingo"], inicio_h = 0, fim_h = 0, nivel = "" },
+]
+
+[perfis.saude]
+singular = ""
+plural = ""
+padrao = { util = "", sabado = "", domingo = "" }
+periodos = []
+
+[perfis.ensino]
+singular = ""
+plural = ""
+padrao = { util = "", sabado = "", domingo = "" }
+periodos = []
+
+[perfis.residencial]
+singular = ""
+plural = ""
+padrao = { util = "", sabado = "", domingo = "" }
+periodos = []
+
+[perfis.religioso]
+singular = ""
+plural = ""
+padrao = { util = "", sabado = "", domingo = "" }
+periodos = []
+
+[perfis.outros]
+singular = ""
+plural = ""
+padrao = { util = "", sabado = "", domingo = "" }
+periodos = []

@@ -1,0 +1,32 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "nome": "Só uma linha"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -42.655423,
+      -21.508898
+     ],
+     [
+      -42.65636,
+      -21.509204
+     ],
+     [
+      -42.657738,
+      -21.508894
+     ],
+     [
+      -42.658401,
+      -21.507924
+     ]
+    ]
+   }
+  }
+ ]
+}

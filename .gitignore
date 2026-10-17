@@ -1,0 +1,39 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# .NET (acesso/)
+acesso/bin/
+acesso/obj/
+
+# Dados (baixados/gerados pelo pipeline: `uv run comunidades`)
+data/
+saida/*
+!saida/mapa_comunidades.html
+# Página de entrada e os resumos de cada município (para refazer a entrada a partir de um clone)
+!saida/index.html
+!saida/resumo_mapa.json
+# Área administrativa (protótipo, dados fictícios)
+!saida/admin.html
+# saida/muriae/ volta a valer só para estes arquivos (o resto da pasta continua ignorado)
+!saida/muriae/
+saida/muriae/*
+!saida/muriae/mapa_comunidades.html
+!saida/muriae/resumo_mapa.json
+
+# Segredos locais (senha do banco etc.): nunca no git
+.env
+.env.*
+!.env.exemplo
+
+# Cobertura dos testes (coverage)
+.coverage
+htmlcov/
+node_modules/

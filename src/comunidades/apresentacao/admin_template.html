@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<!-- Nenhuma conexão externa (connect-src 'none'); só os scripts embutidos, pelo hash. Calculada pelo admin.py. -->
+<meta http-equiv="Content-Security-Policy" content="/*__CSP__*/">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Norte · Área administrativa (protótipo)</title>
+<link rel="icon" type="image/svg+xml" href="__FAVICON__">
+<!-- IBM Plex Sans e Mono embutidas (SIL OFL 1.1; ver vendor/ibm-plex/) -->
+<style>/*__FONTES__*/</style>
+<style>
+/* ---------- Cores do Norte (claro e escuro, como no mapa) ---------- */
+:root {
+  color-scheme: light;
+  --ambar: #F5B83D; --noite: #0E1620; --mare: #1C2A37; --nevoa: #E9EEF3;
+  --fundo: #F3F5F7; --sup: #FFFFFF; --sup2: #EDF1F4; --linha: #D5DDE4;
+  --texto: #12202C; --texto2: #3E4C59; --apagado: #5A6875;
+  --erro: #B42318; --ok: #1B7D4B; --info: #1663C7; --sombra: 0 2px 10px rgba(14,22,32,.12);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --fundo: #0E1620; --sup: #15202B; --sup2: #1C2A37; --linha: #2A3A4A;
+    --texto: #E9EEF3; --texto2: #B4C0CC; --apagado: #93A1AF;
+    --erro: #FF8A7A; --ok: #3FB97A; --info: #6CB4FF; --sombra: 0 2px 12px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --fundo: #0E1620; --sup: #15202B; --sup2: #1C2A37; --linha: #2A3A4A;
+  --texto: #E9EEF3; --texto2: #B4C0CC; --apagado: #93A1AF;
+  --erro: #FF8A7A; --ok: #3FB97A; --info: #6CB4FF; --sombra: 0 2px 12px rgba(0,0,0,.45);
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--fundo); color: var(--texto);
+  font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+.mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-weight: 500; }
+[hidden] { display: none !important; }
+a { color: var(--info); }
+:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+
+/* Faixa de protótipo: sempre visível, no topo */
+.faixa { position: sticky; top: 0; z-index: 50; margin: 0; padding: 10px 16px; background: var(--ambar); color: var(--noite);
+  font-size: 14px; font-weight: 600; line-height: 1.4; text-align: center; }
+
+.topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--noite); color: var(--nevoa); }
+.marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.marca svg { width: 40px; height: 40px; flex: none; }
+.marca .nome { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.1; }
+.marca .sub { margin: 0; font-size: 13px; color: #B4C0CC; }
+.acoes-topo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sessao { font-size: 13px; color: #B4C0CC; }
+.topo button, .topo a.botao { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A3A4A;
+  background: var(--mare); color: var(--nevoa); font: inherit; font-size: 14px; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; }
+
+/* Corpo: menu lateral simples + conteúdo */
+.corpo { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 140px); }
+.corpo:has(> nav.menu[hidden]) { grid-template-columns: minmax(0, 1fr); }
+td.mono { white-space: nowrap; }
+nav.menu { padding: 16px 10px; border-right: 1px solid var(--linha); background: var(--sup); }
+nav.menu ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+nav.menu a { display: flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px;
+  color: var(--texto); text-decoration: none; font-weight: 500; }
+nav.menu a[aria-current="page"] { background: var(--sup2); box-shadow: inset 3px 0 0 var(--ambar); }
+nav.menu a:hover { background: var(--sup2); }
+main { padding: 24px; max-width: 1100px; width: 100%; }
+h1 { margin: 0 0 6px; font-size: 24px; font-weight: 600; }
+h2 { margin: 0 0 10px; font-size: 18px; font-weight: 600; }
+.apoio { margin: 0 0 18px; color: var(--texto2); }
+.cartao { background: var(--sup); border: 1px solid var(--linha); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+
+/* Botões */
+.botao, button.botao { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px;
+  padding: 0 16px; border-radius: 10px; border: 1px solid var(--linha); background: var(--sup2); color: var(--texto);
+  font: inherit; font-weight: 500; cursor: pointer; text-decoration: none; }
+.botao.principal { background: var(--ambar); border-color: var(--ambar); color: var(--noite); font-weight: 600; }
+.botao.perigo { color: var(--erro); }
+.botao:hover { filter: brightness(1.04); }
+.botao:disabled { opacity: .55; cursor: not-allowed; }
+.linha-botoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* Mensagens */
+.aviso { margin: 0 0 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--linha); background: var(--sup2); }
+.aviso.ok { border-color: var(--ok); }
+.aviso.erro { border-color: var(--erro); color: var(--erro); }
+.aviso p { margin: 0; }
+.aviso p + p { margin-top: 4px; }
+
+/* Barra de busca */
+.barra { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 14px; }
+.barra .campo { flex: 1 1 240px; margin: 0; }
+
+/* Formulários */
+form { display: block; }
+details.grupo { background: var(--sup); border: 1px solid var(--linha); border-radius: 14px; margin-bottom: 12px; }
+details.grupo > summary { display: flex; align-items: center; min-height: 48px; padding: 0 16px; font-weight: 600; cursor: pointer; }
+details.grupo > summary .contagem { margin-left: auto; font-size: 13px; color: var(--erro); font-weight: 500; }
+.grupo-corpo { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 16px; padding: 4px 16px 16px; }
+.campo { display: grid; gap: 4px; margin-bottom: 8px; align-content: start; }
+.campo.largo { grid-column: 1 / -1; }
+.campo > label, .rotulo { font-size: 14px; font-weight: 600; }
+.obrig { color: var(--erro); }
+.ajuda { margin: 0; font-size: 12.5px; color: var(--apagado); }
+input[type="text"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input[type="date"],
+input[type="search"], select {
+  width: 100%; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--linha);
+  background: var(--sup); color: var(--texto); font: inherit; }
+input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--erro); }
+input[readonly] { background: var(--sup2); }
+.erro-campo { margin: 0; min-height: 0; font-size: 13px; color: var(--erro); }
+.erro-campo:empty { display: none; }
+
+/* Opção marcável com área de toque de 44 px (o input cobre a linha inteira) */
+.opcao { position: relative; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 10px;  /* 44 px + a borda */
+  border-radius: 10px; border: 1px solid var(--linha); background: var(--sup); cursor: pointer; }
+.opcao input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.opcao .caixa { flex: none; width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--apagado); display: grid; place-items: center; }
+.opcao input:checked + .caixa { background: var(--ambar); border-color: var(--ambar); }
+.opcao input:checked + .caixa::after { content: ""; width: 10px; height: 6px; border: solid var(--noite); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+.opcao input:focus-visible + .caixa { outline: 2px solid var(--info); outline-offset: 2px; }
+.opcao input:disabled { cursor: not-allowed; }
+.opcao:has(input:disabled) { opacity: .7; }
+.opcoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+
+/* Municípios no formulário da empresa */
+.municipio { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; gap: 8px; align-items: start; margin-bottom: 8px; }
+.municipio .erro-campo { grid-column: 1 / -1; }
+
+/* Tabelas (no celular viram cartões) */
+.tabela-caixa { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--sup); border: 1px solid var(--linha); border-radius: 14px; }
+th, td { padding: 10px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--linha); }
+th { font-size: 13px; color: var(--texto2); font-weight: 600; background: var(--sup2); }
+tr:last-child td { border-bottom: 0; }
+td .linha-botoes { flex-wrap: nowrap; }
+.etiqueta { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--sup2); border: 1px solid var(--linha); }
+.etiqueta.ativa, .etiqueta.ativo { color: var(--ok); border-color: var(--ok); }
+.etiqueta.suspensa, .etiqueta.bloqueado { color: var(--erro); border-color: var(--erro); }
+.vazio { color: var(--texto2); }
+.resumo { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+.resumo dt { color: var(--texto2); }
+.resumo dd { margin: 0; }
+
+/* Entrada (simulada) */
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { padding: 0; margin-bottom: 8px; }
+.perfis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.perfis .opcao { align-items: start; padding: 12px; min-height: 64px; }
+.perfis .opcao .caixa { border-radius: 50%; margin-top: 2px; }
+.perfis .opcao input:checked + .caixa::after { width: 8px; height: 8px; border: 0; border-radius: 50%; background: var(--noite); transform: none; }
+.perfis .opcao strong { display: block; }
+.perfis .opcao small { color: var(--texto2); }
+
+@media (max-width: 760px) {
+  .corpo { grid-template-columns: minmax(0, 1fr); }
+  nav.menu { border-right: 0; border-bottom: 1px solid var(--linha); padding: 8px; }
+  nav.menu ul { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
+  main { padding: 16px; }
+  .municipio { grid-template-columns: minmax(0, 1fr) auto; }
+  .municipio .codigo { grid-column: 1 / -1; }
+  /* tabela vira lista de cartões */
+  table, thead, tbody, tr, td { display: block; }
+  thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  table { border: 0; background: none; }
+  tr { background: var(--sup); border: 1px solid var(--linha); border-radius: 14px; margin-bottom: 10px; padding: 6px 0; }
+  td { border: 0; padding: 4px 14px; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px; }
+  td::before { content: attr(data-rotulo); color: var(--texto2); font-size: 13px; }
+  td { overflow-wrap: anywhere; }
+  td .etiqueta { justify-self: start; }
+  td .linha-botoes { flex-wrap: wrap; }
+}
+@media print { .faixa { position: static; } }
+</style>
+</head>
+<body>
+<p class="faixa" id="faixa" role="note">Protótipo de demonstração — dados fictícios. Na versão de produção, esta área roda no servidor da distribuidora, com login corporativo.</p>
+<header class="topo">
+  <div class="marca">
+    <!--__LOGO__-->
+    <div><p class="nome">Norte</p><p class="sub">Área administrativa</p></div>
+  </div>
+  <div class="acoes-topo">
+    <span class="sessao" id="sessao"></span>
+    <button type="button" id="btnTema" data-acao="tema" aria-label="Tema: automático">Tema: automático</button>
+    <button type="button" id="btnTrocar" data-acao="sair" hidden>Trocar perfil</button>
+    <a class="botao" href="__MAPAS__">Mapas</a>
+  </div>
+</header>
+<div class="corpo">
+  <nav class="menu" id="menu" aria-label="Administração"><ul id="menuLista"></ul></nav>
+  <main id="conteudo" tabindex="-1"></main>
+</div>
+<script type="application/json" id="dados">/*__DADOS__*/</script>
+<script>/*__MODELO__*/</script>
+<script>
+'use strict';
+const D = JSON.parse(document.getElementById('dados').textContent);
+const M = Modelo;
+
+// =====================================================================================
+// MODEL: as regras e os dados (empresas, usuários, sessão e registro) estão em Modelo
+// (admin_modelo.js, embutido acima). Aqui fica só o estado da tela. Tudo na memória:
+// recarregar a página volta aos dados de demonstração. Nada fica guardado no navegador
+// (nem em localStorage, nem em sessionStorage), nem mesmo o tema.
+// =====================================================================================
+const estado = M.criarEstado(D.demo);
+estado.ui = {
+  rota: { tela: 'entrar' },
+  tema: 'auto',            // auto (segue o sistema), claro ou escuro
+  busca: '',
+  rascunho: null,          // cópia do formulário em edição
+  tocados: new Set(),      // campos já editados (a mensagem de erro só aparece depois)
+  tentouSalvar: false,
+  erros: {},
+  aviso: null,             // { tipo: 'ok' | 'erro', linhas: [...] }
+  entrada: { perfil: 'admin_farol', empresaId: D.demo.empresas[0]?.id ?? '' },
+};
+const TEMAS = ['auto', 'claro', 'escuro'];
+const ROTULO_TEMA = { auto: 'Tema: automático', claro: 'Tema: claro', escuro: 'Tema: escuro' };
+
+function lerRota(hash) {
+  const p = String(hash || '').replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  switch (p[0]) {
+    case 'empresas': return { tela: 'empresas' };
+    case 'empresa': return { tela: 'empresa', id: p[1] === 'nova' ? null : p[1] };
+    case 'usuarios': return { tela: 'usuarios', empresaId: p[1] };
+    case 'usuario': return { tela: 'usuario', empresaId: p[1], id: p[2] === 'novo' ? null : p[2] };
+    case 'configuracao': return { tela: 'configuracao', empresaId: p[1] };
+    case 'registro': return { tela: 'registro' };
+    case 'sem-acesso': return { tela: 'semAcesso' };
+    default: return { tela: 'entrar' };
+  }
+}
+
+// A rota é permitida para a sessão atual?
+function rotaPermitida(r, s) {
+  if (r.tela === 'entrar') return true;
+  if (!s) return false;
+  switch (r.tela) {
+    case 'empresas': return M.pode(s, 'ver_empresas');
+    case 'empresa': return M.pode(s, r.id ? 'editar_empresa' : 'criar_empresa', r.id);
+    case 'usuarios': case 'usuario': return M.pode(s, 'ver_usuarios', r.empresaId);
+    case 'configuracao': return M.pode(s, 'ver_configuracao', r.empresaId);
+    case 'registro': return M.pode(s, 'ver_registro');
+    default: return false;
+  }
+}
+
+const empresaPorId = id => estado.empresas.find(e => e.id === id);
+const nomesMunicipios = (empresa, codigos) => empresa.municipios.filter(m => codigos.includes(m.codigo)).map(m => m.nome);
+const dataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+
+// =====================================================================================
+// VIEW: desenha a partir do estado, sem mudar o estado. Todo texto entra por textContent
+// ou value (nunca innerHTML), então um nome como "<img src=x onerror=...>" aparece como texto.
+// =====================================================================================
+const $ = id => document.getElementById(id);
+
+// Cria um elemento: props com 'class', atributos, propriedades (value, checked, disabled) e filhos
+function h(tag, props = {}, ...filhos) {
+  const el = document.createElement(tag);
+  let valor;
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'value') valor = v;
+    else if (k === 'checked' || k === 'disabled' || k === 'readOnly' || k === 'open' || k === 'selected') el[k] = true;
+    else el.setAttribute(k, v === true ? '' : String(v));
+  }
+  for (const f of filhos.flat(Infinity)) if (f != null && f !== false) el.append(f instanceof Node ? f : String(f));
+  if (valor !== undefined) el.value = valor;
+  return el;
+}
+
+function desenharTema() {
+  const r = document.documentElement, t = estado.ui.tema;
+  if (t === 'auto') delete r.dataset.theme; else r.dataset.theme = t === 'escuro' ? 'dark' : 'light';
+  $('btnTema').textContent = ROTULO_TEMA[t];
+  $('btnTema').setAttribute('aria-label', ROTULO_TEMA[t]);
+}
+
+function desenharCabecalho() {
+  const s = estado.sessao;
+  $('sessao').textContent = s ? `Entrou como ${M.quem(s, estado)} (simulado)` : '';
+  $('btnTrocar').hidden = !s;
+  const itens = M.menu(s);
+  $('menu').hidden = !itens.length;
+  const atual = estado.ui.rota.tela;
+  $('menuLista').replaceChildren(...itens.map(([tela, rotulo]) => {
+    const alvo = tela === 'empresas' ? '#/empresas' : tela === 'registro' ? '#/registro' : `#/${tela}/${encodeURIComponent(s.empresaId)}`;
+    const marcado = atual === tela || (tela === 'empresas' && atual === 'empresa') || (tela === 'usuarios' && atual === 'usuario');
+    return h('li', {}, h('a', { href: alvo, 'aria-current': marcado ? 'page' : null }, rotulo));
+  }));
+}
+
+function caixaAviso() {
+  const a = estado.ui.aviso;
+  if (!a) return null;
+  return h('div', { class: `aviso ${a.tipo}`, role: a.tipo === 'erro' ? 'alert' : 'status', id: 'aviso' }, a.linhas.map(l => h('p', {}, l)));
+}
+
+// ---------- Campos de formulário ----------
+function campo(nome, rotulo, controle, { obrig = false, ajuda = '', largo = false } = {}) {
+  controle.id = `f-${nome}`;
+  controle.setAttribute('name', nome);
+  controle.setAttribute('aria-describedby', `erro-${nome}${ajuda ? ` ajuda-${nome}` : ''}`);
+  if (obrig) controle.setAttribute('aria-required', 'true');
+  return h('div', { class: `campo${largo ? ' largo' : ''}` },
+    h('label', { for: controle.id }, rotulo, obrig ? h('span', { class: 'obrig', 'aria-hidden': 'true' }, ' *') : null),
+    controle,
+    ajuda ? h('p', { class: 'ajuda', id: `ajuda-${nome}` }, ajuda) : null,
+    h('p', { class: 'erro-campo', id: `erro-${nome}`, 'data-erro': nome }));
+}
+const entrada = (tipo, valor, extra = {}) => h('input', { type: tipo, value: valor ?? '', autocomplete: 'off', ...extra });
+const selecao = (opcoes, valor, extra = {}) =>
+  h('select', { value: valor, ...extra }, Object.entries(opcoes).map(([v, t]) => h('option', { value: v, selected: v === valor }, t)));
+const marcavel = (nome, valor, rotulo, marcado, extra = {}) =>
+  h('label', { class: 'opcao' }, h('input', { type: 'checkbox', name: nome, value: valor, checked: marcado, ...extra }),
+    h('span', { class: 'caixa', 'aria-hidden': 'true' }), h('span', {}, rotulo));
+
+// Mostra as mensagens de erro (só nos campos já tocados, ou em todos depois de tentar salvar)
+function atualizarErros() {
+  const u = estado.ui, form = document.querySelector('form[data-form]');
+  if (!form) return;
+  form.querySelectorAll('[data-erro]').forEach(p => {
+    const nome = p.dataset.erro;
+    const msg = (u.tentouSalvar || u.tocados.has(nome) || u.tocados.has(nome.replace(/\d+$/, ''))) ? (u.erros[nome] || '') : '';
+    p.textContent = msg;
+    const ctl = form.querySelector(`#f-${CSS.escape(nome)}`);
+    if (ctl) ctl.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  });
+  form.querySelectorAll('details.grupo').forEach(g => {
+    const n = u.tentouSalvar ? [...g.querySelectorAll('[data-erro]')].filter(p => u.erros[p.dataset.erro]).length : 0;
+    g.querySelector('.contagem').textContent = n ? `${n} ${n === 1 ? 'campo para corrigir' : 'campos para corrigir'}` : '';
+    if (n) g.open = true;
+  });
+}
+
+// ---------- Telas ----------
+function telaEntrar() {
+  const ui = estado.ui.entrada;
+  const opcoes = [
+    ['admin_farol', 'Admin do Norte', 'Cadastra as empresas e os primeiros usuários.'],
+    ['admin_empresa', 'Admin da empresa', 'Cuida dos usuários e da configuração da própria empresa.'],
+    ['operador', 'Operador', 'Usa o mapa; não acessa a administração.'],
+    ['consulta', 'Consulta', 'Só consulta o mapa; não acessa a administração.'],
+  ];
+  const precisaEmpresa = ui.perfil !== 'admin_farol';
+  return h('section', { 'aria-labelledby': 't-entrar' },
+    h('h1', { id: 't-entrar', tabindex: '-1' }, 'Entrar (simulado)'),
+    h('p', { class: 'apoio' }, 'Demonstração: escolha um perfil para ver o que ele pode fazer. Na produção, o acesso é pelo login corporativo (SSO) com verificação em 2 etapas, sem esta escolha.'),
+    caixaAviso(),
+    h('form', { 'data-form': 'entrar', novalidate: true },
+      h('fieldset', { class: 'perfis', style: null },
+        h('legend', { class: 'rotulo' }, 'Entrar como'),
+        opcoes.map(([v, t, d]) => h('label', { class: 'opcao' },
+          h('input', { type: 'radio', name: 'perfil', value: v, checked: ui.perfil === v }),
+          h('span', { class: 'caixa', 'aria-hidden': 'true' }),
+          h('span', {}, h('strong', {}, t), h('small', {}, d))))),
+      precisaEmpresa ? campo('empresaId', 'Empresa', selecao(Object.fromEntries(estado.empresas.map(e => [e.id, e.nomeFantasia])), ui.empresaId)) : null,
+      h('div', { class: 'linha-botoes' }, h('button', { type: 'submit', class: 'botao principal' }, 'Entrar'))));
+}
+
+function telaSemAcesso() {
+  const s = estado.sessao;
+  const deEmpresa = s && (s.perfil === 'operador' || s.perfil === 'consulta');
+  return h('section', { 'aria-labelledby': 't-sem' },
+    h('h1', { id: 't-sem', tabindex: '-1' }, deEmpresa ? 'Sem acesso à administração' : 'Sem acesso'),
+    h('p', { class: 'apoio' }, deEmpresa
+      ? `O perfil ${M.PERFIS[s.perfil]} usa o mapa, mas não acessa a administração.`
+      : 'Esta tela é de outro perfil ou de outra empresa.'),
+    h('div', { class: 'linha-botoes' },
+      h('a', { class: 'botao principal', href: D.mapas }, 'Abrir os mapas'),
+      h('button', { type: 'button', class: 'botao', 'data-acao': 'sair' }, 'Trocar perfil')));
+}
+
+function linhasEmpresas() {
+  const termo = estado.ui.busca;
+  const lista = estado.empresas.filter(e => M.confere(termo, e.nomeFantasia, e.razaoSocial, e.cnpj, ...e.municipios.map(m => m.nome)));
+  if (!lista.length) return [h('tr', {}, h('td', { colspan: '6', class: 'vazio' }, 'Nenhuma empresa encontrada.'))];
+  return lista.map(e => h('tr', {},
+    h('td', { 'data-rotulo': 'Empresa' }, h('strong', {}, e.nomeFantasia)),
+    h('td', { 'data-rotulo': 'CNPJ', class: 'mono' }, e.cnpj),
+    h('td', { 'data-rotulo': 'Municípios' }, e.municipios.map(m => m.nome).join(', ')),
+    h('td', { 'data-rotulo': 'Usuários' }, String(estado.usuarios.filter(u => u.empresaId === e.id).length)),
+    h('td', { 'data-rotulo': 'Status' }, h('span', { class: `etiqueta ${e.status}` }, e.status === 'ativa' ? 'Ativa' : 'Suspensa')),
+    h('td', { 'data-rotulo': 'Ações' }, h('div', { class: 'linha-botoes' },
+      h('a', { class: 'botao', href: `#/empresa/${encodeURIComponent(e.id)}`, 'aria-label': `Editar ${e.nomeFantasia}` }, 'Editar'),
+      h('a', { class: 'botao', href: `#/usuarios/${encodeURIComponent(e.id)}`, 'aria-label': `Usuários de ${e.nomeFantasia}` }, 'Usuários'),
+      h('button', { type: 'button', class: `botao${e.status === 'ativa' ? ' perigo' : ''}`, 'data-acao': 'alternar-empresa', 'data-id': e.id,
+        'aria-label': `${e.status === 'ativa' ? 'Suspender' : 'Reativar'} ${e.nomeFantasia}` }, e.status === 'ativa' ? 'Suspender' : 'Reativar')))));
+}
+
+function telaEmpresas() {
+  return h('section', { 'aria-labelledby': 't-empresas' },
+    h('h1', { id: 't-empresas', tabindex: '-1' }, 'Empresas'),
+    h('p', { class: 'apoio' }, 'Distribuidoras, cooperativas e permissionárias que usam o Norte.'),
+    caixaAviso(),
+    h('div', { class: 'barra' },
+      campo('busca', 'Buscar', entrada('search', estado.ui.busca, { placeholder: 'Nome, CNPJ ou município' })),
+      h('a', { class: 'botao principal', href: '#/empresa/nova' }, 'Nova empresa')),
+    h('div', { class: 'tabela-caixa' }, h('table', {},
+      h('thead', {}, h('tr', {}, ['Empresa', 'CNPJ', 'Municípios', 'Usuários', 'Status', 'Ações'].map(t => h('th', { scope: 'col' }, t)))),
+      h('tbody', { id: 'lista' }, linhasEmpresas()))));
+}
+
+function grupo(titulo, aberto, ...campos) {
+  return h('details', { class: 'grupo', open: aberto },
+    h('summary', {}, titulo, h('span', { class: 'contagem' })),
+    h('div', { class: 'grupo-corpo' }, campos));
+}
+
+function botoesToml(empresa) {
+  if (!empresa.id || !M.pode(estado.sessao, 'gerar_toml', empresa.id)) return null;
+  return h('div', { class: 'cartao' },
+    h('h2', {}, 'Gerar arquivo de configuração (.toml)'),
+    h('p', { class: 'apoio' }, 'Um arquivo por município, no formato de distribuidoras/*.toml, para rodar o Norte: uv run comunidades --distribuidora arquivo.toml. Usa os dados salvos (salve antes as alterações). Não leva usuários.'),
+    h('div', { class: 'linha-botoes' }, empresa.municipios.map(m =>
+      h('button', { type: 'button', class: 'botao', 'data-acao': 'gerar-toml', 'data-empresa': empresa.id, 'data-municipio': m.codigo }, `Gerar .toml de ${m.nome}`))));
+}
+
+function telaEmpresa() {
+  const r = estado.ui.rascunho, nova = !r.id;
+  const salva = nova ? null : empresaPorId(r.id);
+  const municipios = r.municipios.map((m, i) => h('div', { class: 'municipio' },
+    h('input', { type: 'text', class: 'codigo', id: `f-municipio${i}`, name: 'municipio-codigo', 'data-i': i, value: m.codigo, inputmode: 'numeric',
+      maxlength: '7', 'aria-label': `Código IBGE do município ${i + 1}`, placeholder: 'Código IBGE', 'aria-describedby': `erro-municipio${i}` }),
+    h('input', { type: 'text', name: 'municipio-nome', 'data-i': i, value: m.nome, 'aria-label': `Nome do município ${i + 1}`, placeholder: 'Nome do município' }),
+    h('button', { type: 'button', class: 'botao perigo', 'data-acao': 'remover-municipio', 'data-i': i, 'aria-label': `Remover município ${i + 1}` }, 'Remover'),
+    h('p', { class: 'erro-campo', id: `erro-municipio${i}`, 'data-erro': `municipio${i}` })));
+  return h('section', { 'aria-labelledby': 't-empresa' },
+    h('h1', { id: 't-empresa', tabindex: '-1' }, nova ? 'Nova empresa' : `Editar ${salva.nomeFantasia}`),
+    h('p', { class: 'apoio' }, 'Campos com * são obrigatórios. As mensagens aparecem enquanto você digita.'),
+    caixaAviso(),
+    h('form', { 'data-form': 'empresa', novalidate: true },
+      grupo('1. Identificação', true,
+        campo('razaoSocial', 'Razão social', entrada('text', r.razaoSocial, { maxlength: '150' }), { obrig: true }),
+        campo('nomeFantasia', 'Nome fantasia', entrada('text', r.nomeFantasia, { maxlength: '80' }), { obrig: true, ajuda: 'É o nome que aparece nas mensagens.' }),
+        campo('cnpj', 'CNPJ', entrada('text', r.cnpj, { maxlength: '18', class: 'mono' }), { obrig: true, ajuda: 'Aceita o CNPJ alfanumérico (a partir de julho de 2026).' }),
+        campo('tipo', 'Tipo', selecao(M.TIPOS_EMPRESA, r.tipo), { obrig: true })),
+      grupo('2. Contato', true,
+        campo('emailInstitucional', 'E-mail institucional', entrada('email', r.emailInstitucional), { obrig: true }),
+        campo('telefone', 'Telefone de atendimento', entrada('tel', r.telefone), { obrig: true, ajuda: 'O 0800 citado no aviso.' }),
+        campo('site', 'Site', entrada('url', r.site, { placeholder: 'https://' }))),
+      grupo('3. Responsáveis', true,
+        campo('gestorNome', 'Gestor do contrato', entrada('text', r.gestorNome), { obrig: true }),
+        campo('gestorEmail', 'E-mail do gestor', entrada('email', r.gestorEmail), { obrig: true }),
+        campo('dpoNome', 'Encarregado de dados (DPO)', entrada('text', r.dpoNome), { obrig: true, ajuda: 'Exigido pela LGPD (art. 41).' }),
+        campo('dpoEmail', 'E-mail do encarregado', entrada('email', r.dpoEmail), { obrig: true })),
+      grupo('4. Área de atuação', true,
+        campo('pais', 'País', selecao({ Brasil: 'Brasil' }, r.pais)),
+        campo('uf', 'UF', selecao(Object.fromEntries(Object.keys(M.UFS).sort().map(u => [u, u])), r.uf), { obrig: true }),
+        h('div', { class: 'campo largo' },
+          h('span', { class: 'rotulo', id: 'rot-municipios' }, 'Municípios atendidos', h('span', { class: 'obrig', 'aria-hidden': 'true' }, ' *')),
+          h('p', { class: 'ajuda' }, 'Código IBGE de 7 dígitos (conferido pelo dígito verificador e pela UF) e o nome como dito no rádio.'),
+          h('div', { role: 'group', 'aria-labelledby': 'rot-municipios' }, municipios),
+          h('p', { class: 'erro-campo', id: 'erro-municipios', 'data-erro': 'municipios' }),
+          h('div', { class: 'linha-botoes' }, h('button', { type: 'button', class: 'botao', 'data-acao': 'adicionar-municipio' }, 'Adicionar município')))),
+      grupo('5. Configuração', true,
+        campo('idioma', 'Idioma do aviso', selecao(M.IDIOMAS, r.idioma), { obrig: true }),
+        campo('fuso', 'Fuso horário', selecao(Object.fromEntries(M.FUSOS.map(f => [f, f])), r.fuso), { obrig: true }),
+        campo('antecedenciaHoras', 'Antecedência mínima (horas)', entrada('number', r.antecedenciaHoras, { min: String(M.PRAZO_LEGAL_MIN_HORAS), step: '1' }),
+          { obrig: true, ajuda: `Não pode ser menor que o prazo legal (${M.PRAZO_LEGAL_MIN_HORAS} h, REN ANEEL 1.000/2021).` }),
+        campo('motivoPadrao', 'Motivo padrão', entrada('text', r.motivoPadrao, { maxlength: '120' }))),
+      grupo('6. Acesso e segurança', true,
+        campo('status', 'Status', selecao({ ativa: 'Ativa', suspensa: 'Suspensa' }, r.status), { obrig: true }),
+        campo('contratoInicio', 'Início do contrato', entrada('date', r.contratoInicio), { obrig: true }),
+        campo('contratoFim', 'Fim do contrato', entrada('date', r.contratoFim), { obrig: true }),
+        campo('dominio', 'Domínio de e-mail permitido', entrada('text', r.dominio, { placeholder: 'example.com' }), { obrig: true, ajuda: 'Só e-mails deste domínio podem ser cadastrados como usuários.' }),
+        h('div', { class: 'campo' }, marcavel('exige2Etapas', 'sim', 'Exigir verificação em 2 etapas', r.exige2Etapas, { id: 'f-exige2Etapas' }),
+          h('p', { class: 'erro-campo', id: 'erro-exige2Etapas', 'data-erro': 'exige2Etapas' }))),
+      grupo('7. Auditoria', !nova,
+        nova ? h('p', { class: 'ajuda' }, 'Preenchida automaticamente ao salvar.')
+          : h('dl', { class: 'resumo' },
+            h('dt', {}, 'Criado por'), h('dd', {}, `${salva.criadoPor} em ${dataHora(salva.criadoEm)}`),
+            h('dt', {}, 'Alterado por'), h('dd', {}, `${salva.alteradoPor} em ${dataHora(salva.alteradoEm)}`))),
+      h('div', { class: 'linha-botoes' },
+        h('button', { type: 'submit', class: 'botao principal' }, nova ? 'Cadastrar empresa' : 'Salvar alterações'),
+        h('a', { class: 'botao', href: '#/empresas' }, 'Voltar'))),
+    salva ? botoesToml(salva) : null);
+}
+
+function linhasUsuarios(empresa) {
+  const termo = estado.ui.busca;
+  const lista = estado.usuarios.filter(u => u.empresaId === empresa.id && M.confere(termo, u.nome, u.email, M.PERFIS[u.perfil], u.cargo));
+  if (!lista.length) return [h('tr', {}, h('td', { colspan: '8', class: 'vazio' }, 'Nenhum usuário encontrado.'))];
+  return lista.map(u => {
+    const sit = M.situacaoUsuario(u, empresa);
+    return h('tr', {},
+      h('td', { 'data-rotulo': 'Nome' }, h('div', {}, h('strong', {}, u.nome), u.cargo ? h('div', { class: 'ajuda' }, u.cargo) : null)),
+      h('td', { 'data-rotulo': 'E-mail' }, u.email),
+      h('td', { 'data-rotulo': 'Perfil' }, M.PERFIS[u.perfil]),
+      h('td', { 'data-rotulo': 'Municípios' }, nomesMunicipios(empresa, u.municipios).join(', ')),
+      h('td', { 'data-rotulo': 'Status' }, h('span', { class: `etiqueta ${sit.codigo}` }, sit.texto)),
+      h('td', { 'data-rotulo': '2 etapas' }, u.doisFatores ? 'Sim' : 'Não'),
+      h('td', { 'data-rotulo': 'Último acesso' }, u.ultimoAcesso ? dataHora(u.ultimoAcesso) : 'Nunca'),
+      h('td', { 'data-rotulo': 'Ações' }, h('div', { class: 'linha-botoes' },
+        h('a', { class: 'botao', href: `#/usuario/${encodeURIComponent(empresa.id)}/${encodeURIComponent(u.id)}`, 'aria-label': `Editar ${u.nome}` }, 'Editar'),
+        h('button', { type: 'button', class: `botao${u.status === 'bloqueado' ? '' : ' perigo'}`, 'data-acao': 'alternar-bloqueio', 'data-id': u.id,
+          'aria-label': `${u.status === 'bloqueado' ? 'Reativar' : 'Bloquear'} ${u.nome}` }, u.status === 'bloqueado' ? 'Reativar' : 'Bloquear'))));
+  });
+}
+
+function telaUsuarios() {
+  const empresa = empresaPorId(estado.ui.rota.empresaId);
+  return h('section', { 'aria-labelledby': 't-usuarios' },
+    h('h1', { id: 't-usuarios', tabindex: '-1' }, `Usuários · ${empresa.nomeFantasia}`),
+    h('p', { class: 'apoio' }, `Só e-mails @${empresa.dominio}. ${empresa.exige2Etapas ? 'A empresa exige verificação em 2 etapas.' : 'Verificação em 2 etapas opcional.'}`),
+    empresa.status === 'suspensa' ? h('div', { class: 'aviso erro', role: 'note' }, h('p', {}, 'Empresa suspensa: todos os usuários estão bloqueados até a reativação.')) : null,
+    caixaAviso(),
+    h('div', { class: 'barra' },
+      campo('busca', 'Buscar', entrada('search', estado.ui.busca, { placeholder: 'Nome, e-mail ou perfil' })),
+      h('a', { class: 'botao principal', href: `#/usuario/${encodeURIComponent(empresa.id)}/novo` }, 'Convidar usuário')),
+    h('div', { class: 'tabela-caixa' }, h('table', {},
+      h('thead', {}, h('tr', {}, ['Nome', 'E-mail', 'Perfil', 'Municípios', 'Status', '2 etapas', 'Último acesso', 'Ações'].map(t => h('th', { scope: 'col' }, t)))),
+      h('tbody', { id: 'lista' }, linhasUsuarios(empresa)))));
+}
+
+function telaUsuario() {
+  const r = estado.ui.rascunho, novo = !r.id, empresa = empresaPorId(r.empresaId);
+  const perfis = Object.fromEntries(M.PERFIS_USUARIO.map(p => [p, M.PERFIS[p]]));
+  return h('section', { 'aria-labelledby': 't-usuario' },
+    h('h1', { id: 't-usuario', tabindex: '-1' }, novo ? 'Convidar usuário' : `Editar ${estado.usuarios.find(u => u.id === r.id).nome}`),
+    h('p', { class: 'apoio' }, `${empresa.nomeFantasia}. Só o necessário para dar acesso: não pedimos CPF, data de nascimento, endereço nem telefone pessoal.`),
+    caixaAviso(),
+    h('form', { 'data-form': 'usuario', novalidate: true },
+      grupo('Dados do usuário', true,
+        campo('nome', 'Nome completo', entrada('text', r.nome, { maxlength: '100' }), { obrig: true }),
+        campo('email', 'E-mail corporativo', entrada('email', r.email), { obrig: true, ajuda: `Somente @${empresa.dominio}.` }),
+        campo('cargo', 'Cargo ou setor', entrada('text', r.cargo, { maxlength: '80' }))),
+      grupo('Acesso', true,
+        campo('perfil', 'Perfil', selecao(perfis, r.perfil), { obrig: true, ajuda: 'Admin da empresa cuida dos usuários; Operador usa o mapa; Consulta só vê.' }),
+        h('div', { class: 'campo largo' },
+          h('span', { class: 'rotulo', id: 'rot-mun' }, 'Municípios que pode operar', h('span', { class: 'obrig', 'aria-hidden': 'true' }, ' *')),
+          h('div', { class: 'opcoes', role: 'group', 'aria-labelledby': 'rot-mun' },
+            empresa.municipios.map(m => marcavel('municipios', m.codigo, m.nome, r.municipios.includes(m.codigo)))),
+          h('p', { class: 'erro-campo', id: 'erro-municipios', 'data-erro': 'municipios' })),
+        novo ? h('div', { class: 'campo' }, h('span', { class: 'rotulo' }, 'Status'), h('p', { class: 'ajuda' }, 'Convidado (até o primeiro acesso).'))
+          : campo('status', 'Status', selecao({ convidado: 'Convidado', ativo: 'Ativo', bloqueado: 'Bloqueado' }, r.status), { obrig: true }),
+        h('div', { class: 'campo' },
+          marcavel('doisFatores', 'sim', 'Verificação em 2 etapas', r.doisFatores, { id: 'f-doisFatores', disabled: empresa.exige2Etapas }),
+          empresa.exige2Etapas ? h('p', { class: 'ajuda' }, 'Obrigatória nesta empresa.') : null,
+          h('p', { class: 'erro-campo', id: 'erro-doisFatores', 'data-erro': 'doisFatores' }))),
+      h('div', { class: 'linha-botoes' },
+        h('button', { type: 'submit', class: 'botao principal' }, novo ? 'Enviar convite (simulado)' : 'Salvar alterações'),
+        h('a', { class: 'botao', href: `#/usuarios/${encodeURIComponent(empresa.id)}` }, 'Voltar'))));
+}
+
+function telaConfiguracao() {
+  const r = estado.ui.rascunho, empresa = empresaPorId(r.id);
+  return h('section', { 'aria-labelledby': 't-config' },
+    h('h1', { id: 't-config', tabindex: '-1' }, `Configuração · ${empresa.nomeFantasia}`),
+    h('p', { class: 'apoio' }, 'Os dados cadastrais (CNPJ, contato, municípios, domínio) são mantidos pelo Admin do Norte.'),
+    caixaAviso(),
+    h('div', { class: 'cartao' }, h('dl', { class: 'resumo' },
+      h('dt', {}, 'CNPJ'), h('dd', { class: 'mono' }, empresa.cnpj),
+      h('dt', {}, 'Municípios'), h('dd', {}, empresa.municipios.map(m => `${m.nome} (${m.codigo})`).join(', ')),
+      h('dt', {}, 'Domínio permitido'), h('dd', {}, empresa.dominio),
+      h('dt', {}, '2 etapas'), h('dd', {}, empresa.exige2Etapas ? 'Obrigatória' : 'Opcional'))),
+    h('form', { 'data-form': 'configuracao', novalidate: true },
+      grupo('Aviso', true,
+        campo('idioma', 'Idioma do aviso', selecao(M.IDIOMAS, r.idioma), { obrig: true }),
+        campo('fuso', 'Fuso horário', selecao(Object.fromEntries(M.FUSOS.map(f => [f, f])), r.fuso), { obrig: true }),
+        campo('antecedenciaHoras', 'Antecedência mínima (horas)', entrada('number', r.antecedenciaHoras, { min: String(M.PRAZO_LEGAL_MIN_HORAS), step: '1' }),
+          { obrig: true, ajuda: `Não pode ser menor que o prazo legal (${M.PRAZO_LEGAL_MIN_HORAS} h).` }),
+        campo('motivoPadrao', 'Motivo padrão', entrada('text', r.motivoPadrao, { maxlength: '120' }))),
+      h('div', { class: 'linha-botoes' }, h('button', { type: 'submit', class: 'botao principal' }, 'Salvar configuração'))),
+    botoesToml(empresa));
+}
+
+function telaRegistro() {
+  const lista = M.registroVisivel(estado).slice().reverse();
+  return h('section', { 'aria-labelledby': 't-registro' },
+    h('h1', { id: 't-registro', tabindex: '-1' }, 'Registro de atividades'),
+    h('p', { class: 'apoio' }, 'Só desta sessão, na memória do navegador. Na produção, o registro é guardado no servidor e não pode ser alterado.'),
+    h('div', { class: 'linha-botoes', style: null }, h('button', { type: 'button', class: 'botao', 'data-acao': 'baixar-registro', disabled: !lista.length }, 'Baixar registro (.txt)')),
+    h('div', { class: 'tabela-caixa' }, h('table', {},
+      h('thead', {}, h('tr', {}, ['Data e hora', 'Quem', 'Ação', 'Alvo'].map(t => h('th', { scope: 'col' }, t)))),
+      h('tbody', {}, lista.length ? lista.map(r => h('tr', {},
+        h('td', { 'data-rotulo': 'Data e hora' }, dataHora(r.quando)),
+        h('td', { 'data-rotulo': 'Quem' }, r.quem),
+        h('td', { 'data-rotulo': 'Ação' }, r.acao),
+        h('td', { 'data-rotulo': 'Alvo' }, r.alvo)))
+        : [h('tr', {}, h('td', { colspan: '4', class: 'vazio' }, 'Nenhuma atividade ainda.'))]))));
+}
+
+const TELAS = { entrar: telaEntrar, empresas: telaEmpresas, empresa: telaEmpresa, usuarios: telaUsuarios,
+  usuario: telaUsuario, configuracao: telaConfiguracao, registro: telaRegistro, semAcesso: telaSemAcesso };
+
+function desenhar({ focar = false } = {}) {
+  desenharTema();
+  desenharCabecalho();
+  const ui = estado.ui;
+  $('conteudo').replaceChildren(TELAS[ui.permitida ? ui.rota.tela : 'semAcesso']());
+  atualizarErros();
+  if (focar) ($('conteudo').querySelector('h1') || $('conteudo')).focus();
+}
+
+function atualizarLista() {
+  const r = estado.ui.rota;
+  const corpo = $('lista');
+  if (!corpo) return;
+  corpo.replaceChildren(...(r.tela === 'empresas' ? linhasEmpresas() : linhasUsuarios(empresaPorId(r.empresaId))));
+}
+
+function oferecerDownload(nome, texto, tipo) {
+  const url = URL.createObjectURL(new Blob([texto], { type: tipo }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// =====================================================================================
+// CONTROLLER: responde à navegação (#/...), aos cliques e à digitação. Atualiza o estado
+// pelo Modelo e pede à View para redesenhar. Uma rota sem permissão mostra "Sem acesso".
+// =====================================================================================
+function rascunhoDaRota(r) {
+  if (r.tela === 'empresa') return structuredClone(r.id ? empresaPorId(r.id) : M.empresaVazia());
+  if (r.tela === 'usuario') {
+    if (r.id) return structuredClone(estado.usuarios.find(u => u.id === r.id && u.empresaId === r.empresaId) ?? null);
+    const novo = M.usuarioVazio(r.empresaId), e = empresaPorId(r.empresaId);
+    novo.doisFatores = !!e?.exige2Etapas;
+    if (e && e.municipios.length === 1) novo.municipios = [e.municipios[0].codigo];
+    return novo;
+  }
+  if (r.tela === 'configuracao') {
+    const e = empresaPorId(r.empresaId);
+    return e ? Object.fromEntries(['id', ...M.CAMPOS_CONFIGURACAO].map(c => [c, e[c]])) : null;
+  }
+  return null;
+}
+
+function validarRascunho() {
+  const ui = estado.ui, r = ui.rascunho, t = ui.rota.tela;
+  if (t === 'empresa') ui.erros = M.validarEmpresa(r, estado.empresas);
+  else if (t === 'usuario') ui.erros = M.validarUsuario(r, empresaPorId(r.empresaId), estado.usuarios);
+  else if (t === 'configuracao') {
+    const e = { ...empresaPorId(r.id), ...r };
+    ui.erros = Object.fromEntries(Object.entries(M.validarEmpresa(e, estado.empresas)).filter(([c]) => M.CAMPOS_CONFIGURACAO.includes(c)));
+  } else ui.erros = {};
+}
+
+function aoMudarRota({ manterAviso = false } = {}) {
+  const ui = estado.ui;
+  let rota = lerRota(location.hash);
+  if (!estado.sessao && rota.tela !== 'entrar') rota = { tela: 'entrar' };
+  const mudouTela = JSON.stringify(rota) !== JSON.stringify(ui.rota);
+  ui.rota = rota;
+  ui.permitida = rotaPermitida(rota, estado.sessao);
+  // Rota permitida mas com registro inexistente (empresa ou usuário de outra empresa): também "Sem acesso"
+  const precisaEmpresa = ['usuarios', 'usuario', 'configuracao'].includes(rota.tela) || (rota.tela === 'empresa' && rota.id);
+  if (ui.permitida && precisaEmpresa && !empresaPorId(rota.empresaId ?? rota.id)) ui.permitida = false;
+  ui.rascunho = ui.permitida ? rascunhoDaRota(rota) : null;
+  if (ui.permitida && ['empresa', 'usuario', 'configuracao'].includes(rota.tela) && !ui.rascunho) ui.permitida = false;
+  if (mudouTela) { ui.busca = ''; ui.tocados = new Set(); ui.tentouSalvar = false; if (!manterAviso) ui.aviso = null; }
+  if (ui.rascunho) validarRascunho();
+  desenhar({ focar: mudouTela });
+}
+
+function irPara(hash, aviso) {
+  estado.ui.aviso = aviso || null;
+  if (location.hash === hash) aoMudarRota({ manterAviso: true });
+  else { estado.ui.proximoAviso = aviso || null; location.hash = hash; }
+}
+
+function telaInicial(s) {
+  if (s.perfil === 'admin_farol') return '#/empresas';
+  if (s.perfil === 'admin_empresa') return `#/usuarios/${encodeURIComponent(s.empresaId)}`;
+  return '#/sem-acesso';
+}
+
+// Digitação nos formulários: atualiza o rascunho e as mensagens, sem redesenhar (o foco fica)
+document.addEventListener('input', ev => {
+  const el = ev.target, form = el.closest('form[data-form]');
+  const ui = estado.ui;
+  if (el.name === 'busca') { ui.busca = el.value; atualizarLista(); return; }
+  if (!form) return;
+  if (form.dataset.form === 'entrar') {
+    if (el.name === 'perfil') { ui.entrada.perfil = el.value; desenhar(); document.querySelector(`input[name="perfil"][value="${el.value}"]`)?.focus(); }
+    else if (el.name === 'empresaId') ui.entrada.empresaId = el.value;
+    return;
+  }
+  const r = ui.rascunho;
+  if (!r) return;
+  if (el.name === 'municipio-codigo' || el.name === 'municipio-nome') {
+    const i = Number(el.dataset.i);
+    r.municipios[i][el.name === 'municipio-codigo' ? 'codigo' : 'nome'] = el.value;
+    ui.tocados.add(`municipio${i}`);
+  } else if (el.name === 'municipios') {
+    r.municipios = [...form.querySelectorAll('input[name="municipios"]:checked')].map(x => x.value);
+    ui.tocados.add('municipios');
+  } else if (el.type === 'checkbox') {
+    r[el.name] = el.checked; ui.tocados.add(el.name);
+  } else if (el.name in r) {
+    r[el.name] = el.value; ui.tocados.add(el.name);
+    if (el.name === 'uf') r.municipios.forEach((_, i) => ui.tocados.add(`municipio${i}`));
+  }
+  validarRascunho();
+  atualizarErros();
+});
+document.addEventListener('change', ev => {
+  // selects e checkboxes já disparam "input"; datas em alguns navegadores só disparam "change"
+  if (ev.target.type === 'date') ev.target.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+document.addEventListener('submit', ev => {
+  ev.preventDefault();
+  const form = ev.target, ui = estado.ui, tipo = form.dataset.form;
+  if (tipo === 'entrar') {
+    const r = M.entrar(estado, ui.entrada.perfil, ui.entrada.empresaId);
+    if (!r.ok) { ui.aviso = { tipo: 'erro', linhas: [r.erro] }; desenhar(); return; }
+    irPara(telaInicial(estado.sessao));
+    return;
+  }
+  ui.tentouSalvar = true;
+  let r;
+  if (tipo === 'empresa') r = M.salvarEmpresa(estado, ui.rascunho);
+  else if (tipo === 'usuario') r = M.salvarUsuario(estado, ui.rascunho);
+  else if (tipo === 'configuracao') r = M.salvarConfiguracao(estado, ui.rascunho.id, ui.rascunho);
+  if (!r.ok) {
+    if (r.erros) ui.erros = { ...ui.erros, ...r.erros };
+    const n = Object.keys(r.erros || {}).length;
+    ui.aviso = { tipo: 'erro', linhas: [r.erro || `Corrija ${n === 1 ? 'o campo marcado' : `os ${n} campos marcados`} para salvar.`] };
+    desenhar();
+    ($('aviso') || form).focus?.();
+    form.querySelector('[aria-invalid="true"]')?.focus();
+    return;
+  }
+  if (tipo === 'empresa') {
+    irPara(`#/empresa/${encodeURIComponent(r.id)}`, { tipo: 'ok', linhas: [ui.rascunho.id ? 'Alterações salvas.' : 'Empresa cadastrada. Agora convide o primeiro admin da empresa.'] });
+  } else if (tipo === 'usuario') {
+    const u = estado.usuarios.find(x => x.id === r.id), novo = !ui.rascunho.id;
+    irPara(`#/usuarios/${encodeURIComponent(u.empresaId)}`, { tipo: 'ok', linhas: novo
+      ? [`Convite simulado para ${u.email}.`, 'Na produção, essa pessoa receberia um link para criar a própria senha, guardada só como hash. Nenhuma senha foi criada aqui.']
+      : ['Alterações salvas.'] });
+  } else {
+    ui.aviso = { tipo: 'ok', linhas: ['Configuração salva.'] };
+    aoMudarRota({ manterAviso: true });
+  }
+});
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-acao]');
+  if (!b) return;
+  const ui = estado.ui, acao = b.dataset.acao;
+  if (acao === 'tema') { ui.tema = TEMAS[(TEMAS.indexOf(ui.tema) + 1) % TEMAS.length]; desenharTema(); return; }
+  if (acao === 'sair') { M.sair(estado); ui.aviso = null; irPara('#/entrar'); return; }
+  if (acao === 'adicionar-municipio') {
+    ui.rascunho.municipios.push({ codigo: '', nome: '' }); validarRascunho(); desenhar();
+    document.getElementById(`f-municipio${ui.rascunho.municipios.length - 1}`)?.focus();
+    return;
+  }
+  if (acao === 'remover-municipio') {
+    ui.rascunho.municipios.splice(Number(b.dataset.i), 1); ui.tocados.add('municipios'); validarRascunho(); desenhar();
+    return;
+  }
+  let r;
+  if (acao === 'alternar-empresa') r = M.alternarEmpresa(estado, b.dataset.id);
+  else if (acao === 'alternar-bloqueio') r = M.alternarBloqueio(estado, b.dataset.id);
+  else if (acao === 'gerar-toml') {
+    r = M.gerarConfiguracao(estado, b.dataset.empresa, b.dataset.municipio, D.padroesToml);
+    if (r.ok) { oferecerDownload(r.nome, r.texto, 'application/toml;charset=utf-8'); ui.aviso = { tipo: 'ok', linhas: [`Arquivo ${r.nome} gerado.`] }; }
+  } else if (acao === 'baixar-registro') {
+    oferecerDownload('farol-registro-de-atividades.txt', M.registroTexto(M.registroVisivel(estado)), 'text/plain;charset=utf-8');
+    return;
+  } else return;
+  if (!r.ok) ui.aviso = { tipo: 'erro', linhas: [r.erro] };
+  else if (acao !== 'gerar-toml') ui.aviso = null;
+  const foco = b.id || null;
+  desenhar();
+  if (foco) $(foco)?.focus();
+});
+
+window.addEventListener('hashchange', () => {
+  const aviso = estado.ui.proximoAviso;
+  estado.ui.proximoAviso = null;
+  if (aviso) estado.ui.aviso = aviso;
+  aoMudarRota({ manterAviso: !!aviso });
+});
+
+// Abertura: sempre começa na entrada simulada
+if (location.hash && location.hash !== '#/entrar') history.replaceState(null, '', '#/entrar');
+aoMudarRota();
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Bibliotecas de terceiros: guardadas byte a byte, sem converter o fim de linha,
+# para o SHA-256 dos arquivos continuar igual ao registrado em ORIGEM.md.
+src/comunidades/apresentacao/vendor/** -text

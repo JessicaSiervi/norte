@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Teste de segurança &lt;b&gt;negrito&lt;/b&gt;</name>
+    <Placemark>
+      <name><![CDATA[<img src=x onerror="window.__xss=1">Área com HTML]]></name>
+      <description><![CDATA[<script>window.__xss = 2</script><img src="https://exemplo.invalid/rastreio.png" onerror="window.__xss=3"><a href="javascript:window.__xss=4">clique</a>]]></description>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-42.655423,-21.508898,0 -42.656360,-21.509204,0 -42.657738,-21.508894,0 -42.658401,-21.507924,0 -42.669630,-21.438514,0 -42.669234,-21.437613,0 -42.663708,-21.433080,0 -42.650160,-21.428789,0 -42.648880,-21.429532,0 -42.641809,-21.442147,0 -42.654917,-21.508098,0 -42.655423,-21.508898,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>
+  </Document>
+</kml>
